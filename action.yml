@@ -4,6 +4,10 @@ author: GitHub Actions
 
 # Define your inputs here.
 inputs:
+  pyproject-file:
+    description: TODO
+    default: pyproject.toml
+
   who-to-greet:
     description: Who to greet
     required: true

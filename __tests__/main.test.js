@@ -1,6 +1,7 @@
 /**
  * Unit tests for the action's main functionality, src/main.js
  */
+const path = require('path');
 const core = require('@actions/core')
 const github = require('@actions/github')
 const main = require('../src/main')
@@ -11,11 +12,15 @@ const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
 const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
 
+
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
 
 // Other utilities
 const timeRegex = /^\d{2}:\d{2}:\d{2}/
+
+const testDataDir = path.join(__dirname, 'data')
+const emptyPyprojectFile = path.join(testDataDir, 'pyproject.empty.toml')
 
 describe('action', () => {
   beforeEach(() => {
@@ -28,6 +33,8 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           return 'World'
+        case 'pyproject-file':
+          return emptyPyprojectFile
         default:
           return ''
       }
@@ -48,6 +55,8 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           return 'World'
+        case 'pyproject-file':
+          return emptyPyprojectFile
         default:
           return ''
       }
@@ -72,6 +81,8 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           throw new Error('Something went wrong...')
+        case 'pyproject-file':
+          return emptyPyprojectFile
         default:
           return ''
       }
