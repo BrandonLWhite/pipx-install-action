@@ -3,10 +3,23 @@ jobs:
    test:
       runs-on: ubuntu-latest
       steps:
+       - run: pip install pipx --upgrade
+       - run: pipx environment
+       # The ACT image does not add the pipx bin folder to the PATH
+       #    (https://github.com/catthehacker/docker_images/blob/master/linux/ubuntu/scripts/act.sh)
+       # but the official Github runner does
+       #    (https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-python.sh)
+       # so we have to take care of it manually here.
+       # Remove this if the ACT image ever gets updated to do this.
+      #  - run: echo "$(pipx environment --value PIPX_BIN_DIR)" >> $GITHUB_PATH
+       - run: echo "/root/.local/bin" >> $GITHUB_PATH
+
+       # Test the pipx-install action
        - uses: actions/checkout@v4
        - run: cp __tests__/data/pyproject.test1.toml pyproject.toml
-       - uses: actions/setup-python@v4
-         with:
-            python-version-file: 'pyproject.toml'
        - uses: './'  # Run this repo's action.
+
+       # Comfirm that expected tools are installed and runnable.
+       - run: poetry --version
+       - run: tox --version
 
