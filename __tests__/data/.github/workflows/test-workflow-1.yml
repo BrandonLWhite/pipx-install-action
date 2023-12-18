@@ -3,15 +3,16 @@ jobs:
    test:
       runs-on: ubuntu-latest
       steps:
+       # The ACT image is using an older version of pipx that does not have the `environment` command that we need.
        - run: pip install pipx --upgrade
-       - run: pipx environment
+
        # The ACT image does not add the pipx bin folder to the PATH
        #    (https://github.com/catthehacker/docker_images/blob/master/linux/ubuntu/scripts/act.sh)
        # but the official Github runner does
        #    (https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-python.sh)
        # so we have to take care of it manually here.
        # Remove this if the ACT image ever gets updated to do this.
-      #  - run: echo "$(pipx environment --value PIPX_BIN_DIR)" >> $GITHUB_PATH
+       #  - run: echo "$(pipx environment --value PIPX_BIN_DIR)" >> $GITHUB_PATH
        - run: echo "/root/.local/bin" >> $GITHUB_PATH
 
        # Test the pipx-install action

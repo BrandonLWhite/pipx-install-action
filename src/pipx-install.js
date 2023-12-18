@@ -11,17 +11,7 @@ const semver = require('semver');
 
 /**
 TODO BW:
-- Get pipx installation info.
-- inject
-
-pipx environment
-    PIPX_HOME=/home/brandon/.local/pipx
-    PIPX_BIN_DIR=/home/brandon/.local/bin
-    PIPX_SHARED_LIBS=/home/brandon/.local/pipx/shared
-    PIPX_LOCAL_VENVS=/home/brandon/.local/pipx/venvs
-    PIPX_LOG_DIR=/home/brandon/.local/pipx/logs
-    PIPX_TRASH_DIR=/home/brandon/.local/pipx/.trash
-    PIPX_VENV_CACHEDIR=/home/brandon/.local/pipx/.cache
+- pipx inject
 
 TODO Docs:
 - Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
@@ -55,17 +45,18 @@ async function pipxInstall(pyprojectFile) {
         throw new Error(`Current Pipx version ${pipxVersion} does not meet minimum requirement of at least ${MIN_PIPX_VERSION}`);
     }
 
+    const pipxBinDir = await getPipxEnv('PIPX_BIN_DIR')
+    const pipxSharedDir = await getPipxEnv('PIPX_SHARED_LIBS');
+    const pipxVenvsDir = await getPipxEnv('PIPX_LOCAL_VENVS');
+
     const pythonVersion = (await getExecOutput('python',['--version'])).stdout.trim();
     const systemHashInput = {
         pipx: pipxVersion,
         python: pythonVersion
     }
 
-    const PIPX_SHARED_LIBS='/root/.local/share/pipx/shared'; // TEMP HACK
-    const PIPX_LOCAL_VENVS='/root/.local/share/pipx/venvs'; // TEMP HACK
-
     const pipxSharedCacheKey = `pipx-shared-${hashObject(systemHashInput)}`;
-    const pipxSharedCacheHit = await restoreCache([PIPX_SHARED_LIBS], pipxSharedCacheKey);
+    const pipxSharedCacheHit = await restoreCache([pipxSharedDir], pipxSharedCacheKey);
 
     for (const [packageName, packageValue] of Object.entries(installPackages)) {
         const packageInfo = getNormalizedPackageInfo(packageName, packageValue);
@@ -74,7 +65,7 @@ async function pipxInstall(pyprojectFile) {
             ...systemHashInput
         }
         const cacheKey = `pipx-install-${packageInfo.name}-${hashObject(cacheHashInput)}`;
-        const venvPath = path.join(PIPX_LOCAL_VENVS, packageInfo.name);
+        const venvPath = path.join(pipxVenvsDir, packageInfo.name);
         const cacheHit = await restoreCache([venvPath], cacheKey);
 
         if(cacheHit) {
@@ -84,7 +75,7 @@ async function pipxInstall(pyprojectFile) {
             const commandPaths = pipxMeta.main_package.app_paths || [];
             for(const commandPath of commandPaths) {
                 const targetPath = commandPath.__Path__;
-                const symlinkPath = path.join('/root/.local/bin', path.basename(targetPath));
+                const symlinkPath = path.join(pipxBinDir, path.basename(targetPath));
                 await fs.symlink(targetPath, symlinkPath);
             }
         }
@@ -105,7 +96,7 @@ async function pipxInstall(pyprojectFile) {
     }
 
     if (!pipxSharedCacheHit) {
-        await saveCache([PIPX_SHARED_LIBS], pipxSharedCacheKey);
+        await saveCache([pipxSharedDir], pipxSharedCacheKey);
     }
 }
 
@@ -126,6 +117,10 @@ function getNormalizedPackageInfo(packageName, packageValue) {
         version: packageValue.version
         // TODO: injects.
     }
+}
+
+async function getPipxEnv(name) {
+    return (await getExecOutput('pipx',['environment', '--value', name])).stdout.trim();
 }
 
 async function getInstalledPackageMetadata(packageName) {
