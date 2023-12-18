@@ -22,5 +22,7 @@ jobs:
 
        # Comfirm that expected tools are installed and runnable.
        - run: poetry --version
+       - run: poetry bundle venv --help
        - run: tox --version
+       - run: poe --version
 

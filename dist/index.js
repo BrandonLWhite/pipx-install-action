@@ -89421,7 +89421,7 @@ async function pipxInstall(pyprojectFile) {
         python: pythonVersion
     }
 
-    const pipxSharedCacheKey = `pipx-shared-${hashObject(systemHashInput)}`;
+    const pipxSharedCacheKey = `pipx-install-shared-${hashObject(systemHashInput)}`;
     const pipxSharedCacheHit = await restoreCache([pipxSharedDir], pipxSharedCacheKey);
 
     for (const [packageName, packageValue] of Object.entries(installPackages)) {
@@ -89450,6 +89450,11 @@ async function pipxInstall(pyprojectFile) {
             core.info(`Installing "${packageSpec}" ...`);
             await exec('pipx',['install', packageSpec]);
 
+            for(const injectPackage of packageInfo.inject) {
+                const injectSpec = injectPackage.name + injectPackage.version
+                core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`);
+                await exec('pipx', ['inject', packageInfo.name, injectSpec]);
+            }
             // TODO: Probably do this if cache enabled (default True)
             // See what was installed.
             const pipxMeta = await getInstalledPackageMetadata(packageInfo.name);
@@ -89467,6 +89472,18 @@ async function pipxInstall(pyprojectFile) {
 }
 
 function getNormalizedPackageInfo(packageName, packageValue) {
+    const packageVersion = getNormalizedPackageVersion(packageName, packageValue);
+
+    const injectPackages = Object.entries(packageValue.inject || {})
+        .map(([packageName, packageValue]) => getNormalizedPackageVersion(packageName, packageValue));
+
+    return {
+        ...packageVersion,
+        inject: injectPackages
+    }
+}
+
+function getNormalizedPackageVersion(packageName, packageValue) {
     if(typeof packageValue === "string") {
         return {
             name: packageName,
@@ -89481,7 +89498,6 @@ function getNormalizedPackageInfo(packageName, packageValue) {
     return {
         name: packageName,
         version: packageValue.version
-        // TODO: injects.
     }
 }
 
