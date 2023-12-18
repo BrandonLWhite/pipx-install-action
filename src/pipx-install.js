@@ -4,17 +4,16 @@ const {exec, getExecOutput} = require('@actions/exec');
 
 const fs = require('fs/promises');
 const path = require('path');
+const crypto = require('crypto');
+
 const TOML = require('@iarna/toml');
-const { consumers } = require('stream');
+const semver = require('semver');
 
 /**
 TODO BW:
-- Caching. Use the package name, version, and ambient Python version to hash.  Maybe pipx version too?
 - Get pipx installation info.
 - inject
 
-pipx --version
-pipx list --json
 pipx environment
     PIPX_HOME=/home/brandon/.local/pipx
     PIPX_BIN_DIR=/home/brandon/.local/bin
@@ -24,14 +23,6 @@ pipx environment
     PIPX_TRASH_DIR=/home/brandon/.local/pipx/.trash
     PIPX_VENV_CACHEDIR=/home/brandon/.local/pipx/.cache
 
-- Tricky: Need to figure out how to get the bin name for a package so that it can be restored from the cache.
-          This is tricky because how are you supposed to know the bin command without installing the package first?
-          I think you can restore a cache using a path, so the idea would be to restore everything fro the /pipx/bin path
-          No, this does not seem to be working. Each path that is passed to saveCache is hashed to form the key, so you
-          have to know each path up front in order to restore.
-- Alternative: Just cache/restore the venv, and manually do symlink after a restore. Use fsPromises.symlink(target, path[, type])
-               https://nodejs.org/api/fs.html#fspromisessymlinktarget-path-type
-
 TODO Docs:
 - Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
 
@@ -40,7 +31,13 @@ Note: There is currently a bug in actions/toolkit/cache where it is mutating the
       See https://github.com/actions/toolkit/issues/1579
       and https://github.com/actions/toolkit/blob/main/packages/cache/src/internal/cacheHttpClient.ts#L88C13-L88C13
 */
-module.exports = async function pipxInstall(pyprojectFile) {
+module.exports = {
+    pipxInstall
+}
+
+const MIN_PIPX_VERSION = "1.1.0";
+
+async function pipxInstall(pyprojectFile) {
     core.info(`Reading ${pyprojectFile}...`)
 
     const projectToml = await fs.readFile(pyprojectFile);
@@ -53,56 +50,58 @@ module.exports = async function pipxInstall(pyprojectFile) {
     }
 
     const pipxVersion = (await getExecOutput('pipx',['--version'])).stdout.trim();
+
+    if(semver.lt(pipxVersion, MIN_PIPX_VERSION)) {
+        throw new Error(`Current Pipx version ${pipxVersion} does not meet minimum requirement of at least ${MIN_PIPX_VERSION}`);
+    }
+
     const pythonVersion = (await getExecOutput('python',['--version'])).stdout.trim();
+    const systemHashInput = {
+        pipx: pipxVersion,
+        python: pythonVersion
+    }
 
     const PIPX_SHARED_LIBS='/root/.local/share/pipx/shared'; // TEMP HACK
     const PIPX_LOCAL_VENVS='/root/.local/share/pipx/venvs'; // TEMP HACK
 
-    const pipxSharedCacheKey = `pipx-shared`; // TEMP HACK
-    const pipxSharedCacheHit = await restoreCache([PIPX_SHARED_LIBS], pipxSharedCacheKey); // What is wrong with this?!
+    const pipxSharedCacheKey = `pipx-shared-${hashObject(systemHashInput)}`;
+    const pipxSharedCacheHit = await restoreCache([PIPX_SHARED_LIBS], pipxSharedCacheKey);
 
     for (const [packageName, packageValue] of Object.entries(installPackages)) {
-        // TODO BW: Extract function.  Always return an object.
-        let versionSpec = packageValue;
-        if(typeof packageValue === "object") {
-            versionSpec = packageValue.version;
-            if(!versionSpec) {
-                throw `The "version" field must be specified for package "${packageName}"`;
-            }
-            // TODO BW: Parse out other fields.
+        const packageInfo = getNormalizedPackageInfo(packageName, packageValue);
+        const cacheHashInput = {
+            ...packageInfo,
+            ...systemHashInput
         }
-        const packageSpec = packageName + versionSpec
-        // TODO: Need to rework cacheKey to also include any injects.  Probably time to switch to a hash.
-        // const cacheKey = `pipx-install:${packageSpec}:pipx==${pipxVersion}:python=${pythonVersion}`;
-        const cacheKey = `pipx-install-${packageName}`; // TEMP HACK
-        const venvPath = path.join(PIPX_LOCAL_VENVS, packageName);
+        const cacheKey = `pipx-install-${packageInfo.name}-${hashObject(cacheHashInput)}`;
+        const venvPath = path.join(PIPX_LOCAL_VENVS, packageInfo.name);
         const cacheHit = await restoreCache([venvPath], cacheKey);
 
         if(cacheHit) {
             core.info(`Restored from cache. Skipping install`);
 
-            const pipxMeta = await getPackageMetadata(packageName);
+            const pipxMeta = await getInstalledPackageMetadata(packageInfo.name);
             const commandPaths = pipxMeta.main_package.app_paths || [];
             for(const commandPath of commandPaths) {
                 const targetPath = commandPath.__Path__;
                 const symlinkPath = path.join('/root/.local/bin', path.basename(targetPath));
                 await fs.symlink(targetPath, symlinkPath);
             }
-
-            continue;
         }
+        else {
+            const packageSpec = packageInfo.name + packageInfo.version
+            core.info(`Installing "${packageSpec}" ...`);
+            await exec('pipx',['install', packageSpec]);
 
-        core.info(`Installing "${packageSpec}" ...`);
-        await exec('pipx',['install', packageSpec]);
+            // TODO: Probably do this if cache enabled (default True)
+            // See what was installed.
+            const pipxMeta = await getInstalledPackageMetadata(packageInfo.name);
+            const installedCommands = pipxMeta.main_package.apps || [];
 
-        // TODO: Probably do this if cache enabled (default True)
-        // See what was installed.
-        const pipxMeta = await getPackageMetadata(packageName);
-        const installedCommands = pipxMeta.main_package.apps || [];
+            core.info(`Package "${packageSpec}" installed with commands [${installedCommands}] using ${pythonVersion}...`);
 
-        core.info(`Package "${packageSpec}" installed with commands [${installedCommands}] using ${pythonVersion}...`);
-
-        await saveCache([venvPath], cacheKey);
+            await saveCache([venvPath], cacheKey);
+        }
     }
 
     if (!pipxSharedCacheHit) {
@@ -110,8 +109,33 @@ module.exports = async function pipxInstall(pyprojectFile) {
     }
 }
 
-async function getPackageMetadata(packageName) {
+function getNormalizedPackageInfo(packageName, packageValue) {
+    if(typeof packageValue === "string") {
+        return {
+            name: packageName,
+            version: packageValue
+        }
+    }
+
+    if(!packageValue.version) {
+        throw new Error(`The "version" field must be specified for package "${packageName}"`);
+    }
+
+    return {
+        name: packageName,
+        version: packageValue.version
+        // TODO: injects.
+    }
+}
+
+async function getInstalledPackageMetadata(packageName) {
     const pipxListOutput = await getExecOutput('pipx',['list', '--json']);
     const pipxList = JSON.parse(pipxListOutput.stdout);
     return pipxList.venvs[packageName].metadata;
+}
+
+function hashObject(value) {
+    return crypto.createHash('sha256')
+        .update(JSON.stringify(value))
+        .digest('hex');
 }

@@ -1,6 +1,6 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
-const pipxInstall = require('./pipx-install')
+const { pipxInstall } = require('./pipx-install')
 
 /**
  * The main function for the action.
