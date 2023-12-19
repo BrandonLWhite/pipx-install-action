@@ -13,7 +13,7 @@ jobs:
        # so we have to take care of it manually here.
        # Remove this if the ACT image ever gets updated to do this.
        #  - run: echo "$(pipx environment --value PIPX_BIN_DIR)" >> $GITHUB_PATH
-       - run: echo "/root/.local/bin" >> $GITHUB_PATH
+       - run: echo "/root/.local/bin" >> "$GITHUB_PATH"
 
        # Test the pipx-install action
        - uses: actions/checkout@v4
