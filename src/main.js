@@ -1,5 +1,6 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
+const { pipxInstall } = require('./pipx-install')
 
 /**
  * The main function for the action.
@@ -7,6 +8,10 @@ const github = require('@actions/github')
  */
 async function run() {
   try {
+    const pyprojectFile = core.getInput('pyproject-file') //  TODO BW: Default this to simply `pyproject.toml`
+
+    await pipxInstall(pyprojectFile)
+
     // The `who-to-greet` input is defined in action metadata file
     const whoToGreet = core.getInput('who-to-greet', { required: true })
     core.info(`Hello, ${whoToGreet}!`)

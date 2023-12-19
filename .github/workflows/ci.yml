@@ -23,7 +23,7 @@ jobs:
         id: setup-node
         uses: actions/setup-node@v4
         with:
-          node-version-file: .node-version
+          node-version-file: package.json
           cache: npm
 
       - name: Install Dependencies
@@ -50,6 +50,8 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@v4
+
+      - run: cp __tests__/data/pyproject.test1.toml pyproject.toml
 
       - name: Test Local Action
         id: test-action
