@@ -89485,8 +89485,8 @@ function getNormalizedPackageInfo(packageName, packageValue) {
   const packageVersion = getNormalizedPackageVersion(packageName, packageValue)
 
   const injectPackages = Object.entries(packageValue.inject || {}).map(
-    ([packageName, packageValue]) =>
-      getNormalizedPackageVersion(packageName, packageValue)
+    ([injectPackageName, injectPackageValue]) =>
+      getNormalizedPackageVersion(injectPackageName, injectPackageValue)
   )
 
   return {
