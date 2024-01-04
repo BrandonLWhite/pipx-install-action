@@ -8,17 +8,9 @@ const { pipxInstall } = require('./pipx-install')
  */
 async function run() {
   try {
-    const pyprojectFile = core.getInput('pyproject-file') //  TODO BW: Default this to simply `pyproject.toml`
+    const configFile = core.getInput('config-file') //  TODO BW: Default this to simply `pyproject.toml`
 
-    await pipxInstall(pyprojectFile)
-
-    // The `who-to-greet` input is defined in action metadata file
-    const whoToGreet = core.getInput('who-to-greet', { required: true })
-    core.info(`Hello, ${whoToGreet}!`)
-
-    // Get the current time and set as an output
-    const time = new Date().toTimeString()
-    core.setOutput('time', time)
+    await pipxInstall(configFile)
 
     // Output the payload for debugging
     core.info(

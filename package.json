@@ -1,16 +1,16 @@
 {
-  "name": "hello-world-javascript-action",
-  "description": "This action prints `Hello, World!` or `Hello, <who-to-greet>!` to the log",
+  "name": "pipx-install-action",
+  "description": "GitHub Action that installs Python CLI packages with pipx",
   "version": "1.0.0",
   "author": "",
   "private": true,
-  "homepage": "https://github.com/actions/hello-world-javascript-action#readme",
+  "homepage": "https://github.com/BrandonLWhite/pipx-install-action",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/hello-world-javascript-action.git"
+    "url": "git+https://github.com/BrandonLWhite/pipx-install-action.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/hello-world-javascript-action/issues"
+    "url": "https://github.com/BrandonLWhite/pipx-install-action/issues"
   },
   "keywords": [
     "GitHub",

@@ -10,9 +10,6 @@ const TOML = require('@iarna/toml')
 const semver = require('semver')
 
 /**
-TODO Docs:
-- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
-
 Note: There is currently a bug in actions/toolkit/cache where it is mutating the array of paths that are passed into
       restoreCache such that a subsequent call to saveCache utilizes a different array of keys.
       See https://github.com/actions/toolkit/issues/1579
@@ -24,10 +21,10 @@ module.exports = {
 
 const MIN_PIPX_VERSION = '1.1.0'
 
-async function pipxInstall(pyprojectFile) {
-  core.info(`Reading ${pyprojectFile}...`)
+async function pipxInstall(configFile) {
+  core.info(`Reading ${configFile}...`)
 
-  const projectToml = await fs.readFile(pyprojectFile)
+  const projectToml = await fs.readFile(configFile)
   const projectParsed = TOML.parse(projectToml)
 
   const installPackages = projectParsed?.tool?.['pipx-install']

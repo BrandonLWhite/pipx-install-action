@@ -1,3 +1,8 @@
+<!--
+TODO Docs:
+- https://github.com/pypa/pipx
+- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers -->
+
 # Hello, World! JavaScript Action
 
 [![GitHub Super-Linter](https://github.com/actions/hello-world-javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
