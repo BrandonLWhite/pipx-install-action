@@ -8,9 +8,10 @@ const { pipxInstall } = require('./pipx-install')
  */
 async function run() {
   try {
-    const configFile = core.getInput('config-file') //  TODO BW: Default this to simply `pyproject.toml`
+    const installConfigFile = core.getInput('install-config-file')
+    const cachePackages = core.getInput('cache-packages')
 
-    await pipxInstall(configFile)
+    await pipxInstall({ installConfigFile, cachePackages })
 
     // Output the payload for debugging
     core.info(

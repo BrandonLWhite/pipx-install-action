@@ -3,9 +3,13 @@ description: Install Python CLI packages with pipx
 author: brandonlwhite@gmail.com
 
 inputs:
-  config-file:
+  install-config-file:
     description: Path to the TOML file that specifies the [tool.pipx-install] section and list of packages to install
     default: pyproject.toml
+
+  cache-packages:
+    description: When 'true', packages will be saved to the repository's GitHub Action cache and restored whenever possible to avoid downloading from the upstream pacakge repository (eg. PyPI)
+    default: true
 
 runs:
   using: node20

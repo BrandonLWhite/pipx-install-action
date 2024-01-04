@@ -1,7 +1,10 @@
 <!--
 TODO Docs:
 - https://github.com/pypa/pipx
-- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers -->
+- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
+- Developed and tested on Linux runners.
+- Requires pipx > ? to already be installed in the runner (this is the case for Github Ubuntu runner)
+-->
 
 # Hello, World! JavaScript Action
 

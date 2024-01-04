@@ -32,7 +32,7 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           return 'World'
-        case 'config-file':
+        case 'install-config-file':
           return emptyPyprojectFile
         default:
           return ''
@@ -54,7 +54,7 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           return 'World'
-        case 'config-file':
+        case 'install-config-file':
           return emptyPyprojectFile
         default:
           return ''
@@ -80,7 +80,7 @@ describe('action', () => {
       switch (name) {
         case 'who-to-greet':
           throw new Error('Something went wrong...')
-        case 'config-file':
+        case 'install-config-file':
           return emptyPyprojectFile
         default:
           return ''

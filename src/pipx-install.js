@@ -21,10 +21,11 @@ module.exports = {
 
 const MIN_PIPX_VERSION = '1.1.0'
 
-async function pipxInstall(configFile) {
-  core.info(`Reading ${configFile}...`)
+async function pipxInstall(options) {
+  const { installConfigFile, cachePackages } = options
+  core.info(`Reading ${installConfigFile}...`)
 
-  const projectToml = await fs.readFile(configFile)
+  const projectToml = await fs.readFile(installConfigFile)
   const projectParsed = TOML.parse(projectToml)
 
   const installPackages = projectParsed?.tool?.['pipx-install']
@@ -71,43 +72,23 @@ async function pipxInstall(configFile) {
       cacheHashInput
     )}`
     const venvPath = path.join(pipxVenvsDir, packageInfo.name)
-    const cacheHit = await restoreCache([venvPath], cacheKey)
+    const cacheHit = cachePackages && (await restoreCache([venvPath], cacheKey))
 
     if (cacheHit) {
-      core.info(`Restored from cache. Skipping install`)
+      core.info(`"${packageSpec}" restored from cache. Skipping install.`)
 
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const commandPaths = pipxMeta.main_package.app_paths || []
-      for (const commandPath of commandPaths) {
-        const targetPath = commandPath.__Path__
-        const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
-        await fs.symlink(targetPath, symlinkPath)
-      }
+      // Recreate the command symlinks
+      await createCommandSymlinks(packageInfo.name, pipxBinDir)
     } else {
-      const packageSpec = packageInfo.name + packageInfo.version
-      core.info(`Installing "${packageSpec}" ...`)
-      await exec('pipx', ['install', packageSpec])
+      await installPackage(packageInfo)
 
-      for (const injectPackage of packageInfo.inject) {
-        const injectSpec = injectPackage.name + injectPackage.version
-        core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
-        await exec('pipx', ['inject', packageInfo.name, injectSpec])
+      if (cachePackages) {
+        await saveCache([venvPath], cacheKey)
       }
-
-      // TODO: Probably do this if cache enabled (default True)
-      // See what was installed.
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const installedCommands = pipxMeta.main_package.apps || []
-
-      core.info(
-        `Package "${packageSpec}" installed with commands [${installedCommands}] using ${pythonVersion}...`
-      )
-
-      await saveCache([venvPath], cacheKey)
     }
   }
 
-  if (!pipxSharedCacheHit) {
+  if (cachePackages && !pipxSharedCacheHit) {
     await saveCache([pipxSharedDir], pipxSharedCacheKey)
   }
 }
@@ -160,4 +141,33 @@ async function getInstalledPackageMetadata(packageName) {
 
 function hashObject(value) {
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex')
+}
+
+async function createCommandSymlinks(packageName, pipxBinDir) {
+  const pipxMeta = await getInstalledPackageMetadata(packageName)
+  const commandPaths = pipxMeta.main_package.app_paths || []
+  for (const commandPath of commandPaths) {
+    const targetPath = commandPath.__Path__
+    const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
+    await fs.symlink(targetPath, symlinkPath)
+  }
+}
+
+async function installPackage(packageInfo) {
+  const packageSpec = packageInfo.name + packageInfo.version
+  core.info(`Installing "${packageSpec}" ...`)
+  await exec('pipx', ['install', packageSpec])
+
+  for (const injectPackage of packageInfo.inject) {
+    const injectSpec = injectPackage.name + injectPackage.version
+    core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
+    await exec('pipx', ['inject', packageInfo.name, injectSpec])
+  }
+
+  const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
+  const installedCommands = pipxMeta.main_package.apps || []
+
+  core.info(
+    `Package "${packageSpec}" installed with commands [${installedCommands}] using "${pipxMeta.python_version}" ...`
+  )
 }

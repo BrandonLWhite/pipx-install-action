@@ -1261,7 +1261,7 @@ function retry(name, method, getStatusCode, maxAttempts = constants_1.DefaultRet
 exports.retry = retry;
 function retryTypedResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay,
+        return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
         // If the error object contains the statusCode property, extract it and return
         // an TypedResponse<T> so it can be processed by the retry logic.
         (error) => {
@@ -4096,8 +4096,8 @@ class OidcClient {
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
-                throw new Error(`Failed to get ID Token. \n
-        Error Code : ${error.statusCode}\n
+                throw new Error(`Failed to get ID Token. \n 
+        Error Code : ${error.statusCode}\n 
         Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
@@ -8875,7 +8875,7 @@ class Serializer {
     /**
      * The provided model mapper.
      */
-    modelMappers = {},
+    modelMappers = {}, 
     /**
      * Whether the contents are XML or not.
      */
@@ -10991,7 +10991,7 @@ class NodeFetchHttpClient {
             body = uploadReportStream;
         }
         const platformSpecificRequestInit = await this.prepareRequest(httpRequest);
-        const requestInit = Object.assign({ body: body, headers: httpRequest.headers.rawHeaders(), method: httpRequest.method,
+        const requestInit = Object.assign({ body: body, headers: httpRequest.headers.rawHeaders(), method: httpRequest.method, 
             // the types for RequestInit are from the browser, which expects AbortSignal to
             // have `reason` and `throwIfAborted`, but these don't exist on our polyfill
             // for Node.
@@ -11190,7 +11190,7 @@ class BaseRequestPolicy {
     /**
      * The next policy in the pipeline. Each policy is responsible for executing the next one if the request is to continue through the pipeline.
      */
-    _nextPolicy,
+    _nextPolicy, 
     /**
      * The options that can be passed to a given request policy.
      */
@@ -12168,7 +12168,7 @@ function createTokenCycler(credential, scopes, tokenCyclerOptions) {
             const tryGetAccessToken = () => credential.getToken(scopes, getTokenOptions);
             // Take advantage of promise chaining to insert an assignment to `token`
             // before the refresh can be considered done.
-            refreshWorker = beginRefresh(tryGetAccessToken, options.retryIntervalInMs,
+            refreshWorker = beginRefresh(tryGetAccessToken, options.retryIntervalInMs, 
             // If we don't have a token, then we should timeout immediately
             (_a = token === null || token === void 0 ? void 0 : token.expiresOnTimestamp) !== null && _a !== void 0 ? _a : Date.now())
                 .then((_token) => {
@@ -12975,7 +12975,7 @@ class ServiceClient {
      * @param credentials - The credentials used for authentication with the service.
      * @param options - The service client options that govern the behavior of the client.
      */
-    constructor(credentials,
+    constructor(credentials, 
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
     options) {
         if (!options) {
@@ -31260,7 +31260,7 @@ function createTokenCycler(credential, scopes, tokenCyclerOptions) {
             const tryGetAccessToken = () => credential.getToken(scopes, getTokenOptions);
             // Take advantage of promise chaining to insert an assignment to `token`
             // before the refresh can be considered done.
-            refreshWorker = beginRefresh(tryGetAccessToken, options.retryIntervalInMs,
+            refreshWorker = beginRefresh(tryGetAccessToken, options.retryIntervalInMs, 
             // If we don't have a token, then we should timeout immediately
             (_a = token === null || token === void 0 ? void 0 : token.expiresOnTimestamp) !== null && _a !== void 0 ? _a : Date.now())
                 .then((_token) => {
@@ -35683,7 +35683,7 @@ const fsCreateReadStream = fs__namespace.createReadStream;
  * append blob, or page blob.
  */
 class BlobClient extends StorageClient {
-    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions,
+    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -36731,7 +36731,7 @@ class BlobClient extends StorageClient {
  * AppendBlobClient defines a set of operations applicable to append blobs.
  */
 class AppendBlobClient extends BlobClient {
-    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions,
+    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -36987,7 +36987,7 @@ class AppendBlobClient extends BlobClient {
  * BlockBlobClient defines a set of operations applicable to block blobs.
  */
 class BlockBlobClient extends BlobClient {
-    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions,
+    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -37616,7 +37616,7 @@ class BlockBlobClient extends BlobClient {
                 if (options.onProgress) {
                     options.onProgress({ loadedBytes: transferProgress });
                 }
-            },
+            }, 
             // concurrency should set a smaller value than maxConcurrency, which is helpful to
             // reduce the possibility when a outgoing handler waits for stream data, in
             // this situation, outgoing handlers are blocked.
@@ -37641,7 +37641,7 @@ class BlockBlobClient extends BlobClient {
  * PageBlobClient defines a set of operations applicable to page blobs.
  */
 class PageBlobClient extends BlobClient {
-    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions,
+    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, blobNameOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -38899,7 +38899,7 @@ class BatchHeaderFilterPolicyFactory {
  * @see https://docs.microsoft.com/en-us/rest/api/storageservices/blob-batch
  */
 class BlobBatchClient {
-    constructor(url, credentialOrPipeline,
+    constructor(url, credentialOrPipeline, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -38931,7 +38931,7 @@ class BlobBatchClient {
     createBatch() {
         return new BlobBatch();
     }
-    async deleteBlobs(urlsOrBlobClients, credentialOrOptions,
+    async deleteBlobs(urlsOrBlobClients, credentialOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -38946,7 +38946,7 @@ class BlobBatchClient {
         }
         return this.submitBatch(batch);
     }
-    async setBlobsAccessTier(urlsOrBlobClients, credentialOrTier, tierOrOptions,
+    async setBlobsAccessTier(urlsOrBlobClients, credentialOrTier, tierOrOptions, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -39038,7 +39038,7 @@ class BlobBatchClient {
  * A ContainerClient represents a URL to the Azure Storage container allowing you to manipulate its blobs.
  */
 class ContainerClient extends StorageClient {
-    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName,
+    constructor(urlOrConnectionString, credentialOrPipelineOrContainerName, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -40750,7 +40750,7 @@ function generateAccountSASQueryParameters(accountSASSignatureValues, sharedKeyC
  * to manipulate blob containers.
  */
 class BlobServiceClient extends StorageClient {
-    constructor(url, credentialOrPipeline,
+    constructor(url, credentialOrPipeline, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -40782,7 +40782,7 @@ class BlobServiceClient extends StorageClient {
      *                                  `BlobEndpoint=https://myaccount.blob.core.windows.net/;QueueEndpoint=https://myaccount.queue.core.windows.net/;FileEndpoint=https://myaccount.file.core.windows.net/;TableEndpoint=https://myaccount.table.core.windows.net/;SharedAccessSignature=sasString`
      * @param options - Optional. Options to configure the HTTP pipeline.
      */
-    static fromConnectionString(connectionString,
+    static fromConnectionString(connectionString, 
     // Legacy, no fix for eslint error without breaking. Disable it for this interface.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options*/
     options) {
@@ -89332,17 +89332,10 @@ const { pipxInstall } = __nccwpck_require__(6426)
  */
 async function run() {
   try {
-    const configFile = core.getInput('config-file')
+    const installConfigFile = core.getInput('install-config-file')
+    const cachePackages = core.getInput('cache-packages')
 
-    await pipxInstall(configFile)
-
-    // The `who-to-greet` input is defined in action metadata file
-    const whoToGreet = core.getInput('who-to-greet', { required: true })
-    core.info(`Hello, ${whoToGreet}!`)
-
-    // Get the current time and set as an output
-    const time = new Date().toTimeString()
-    core.setOutput('time', time)
+    await pipxInstall({ installConfigFile, cachePackages })
 
     // Output the payload for debugging
     core.info(
@@ -89376,9 +89369,6 @@ const TOML = __nccwpck_require__(2901)
 const semver = __nccwpck_require__(1383)
 
 /**
-TODO Docs:
-- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
-
 Note: There is currently a bug in actions/toolkit/cache where it is mutating the array of paths that are passed into
       restoreCache such that a subsequent call to saveCache utilizes a different array of keys.
       See https://github.com/actions/toolkit/issues/1579
@@ -89390,10 +89380,11 @@ module.exports = {
 
 const MIN_PIPX_VERSION = '1.1.0'
 
-async function pipxInstall(pyprojectFile) {
-  core.info(`Reading ${pyprojectFile}...`)
+async function pipxInstall(options) {
+  const { installConfigFile, cachePackages } = options
+  core.info(`Reading ${installConfigFile}...`)
 
-  const projectToml = await fs.readFile(pyprojectFile)
+  const projectToml = await fs.readFile(installConfigFile)
   const projectParsed = TOML.parse(projectToml)
 
   const installPackages = projectParsed?.tool?.['pipx-install']
@@ -89440,43 +89431,23 @@ async function pipxInstall(pyprojectFile) {
       cacheHashInput
     )}`
     const venvPath = path.join(pipxVenvsDir, packageInfo.name)
-    const cacheHit = await restoreCache([venvPath], cacheKey)
+    const cacheHit = cachePackages && (await restoreCache([venvPath], cacheKey))
 
     if (cacheHit) {
-      core.info(`Restored from cache. Skipping install`)
+      core.info(`"${packageSpec}" restored from cache. Skipping install.`)
 
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const commandPaths = pipxMeta.main_package.app_paths || []
-      for (const commandPath of commandPaths) {
-        const targetPath = commandPath.__Path__
-        const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
-        await fs.symlink(targetPath, symlinkPath)
-      }
+      // Recreate the command symlinks
+      await createCommandSymlinks(packageInfo.name, pipxBinDir)
     } else {
-      const packageSpec = packageInfo.name + packageInfo.version
-      core.info(`Installing "${packageSpec}" ...`)
-      await exec('pipx', ['install', packageSpec])
+      await installPackage(packageInfo)
 
-      for (const injectPackage of packageInfo.inject) {
-        const injectSpec = injectPackage.name + injectPackage.version
-        core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
-        await exec('pipx', ['inject', packageInfo.name, injectSpec])
+      if (cachePackages) {
+        await saveCache([venvPath], cacheKey)
       }
-
-      // TODO: Probably do this if cache enabled (default True)
-      // See what was installed.
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const installedCommands = pipxMeta.main_package.apps || []
-
-      core.info(
-        `Package "${packageSpec}" installed with commands [${installedCommands}] using ${pythonVersion}...`
-      )
-
-      await saveCache([venvPath], cacheKey)
     }
   }
 
-  if (!pipxSharedCacheHit) {
+  if (cachePackages && !pipxSharedCacheHit) {
     await saveCache([pipxSharedDir], pipxSharedCacheKey)
   }
 }
@@ -89529,6 +89500,35 @@ async function getInstalledPackageMetadata(packageName) {
 
 function hashObject(value) {
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex')
+}
+
+async function createCommandSymlinks(packageName, pipxBinDir) {
+  const pipxMeta = await getInstalledPackageMetadata(packageName)
+  const commandPaths = pipxMeta.main_package.app_paths || []
+  for (const commandPath of commandPaths) {
+    const targetPath = commandPath.__Path__
+    const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
+    await fs.symlink(targetPath, symlinkPath)
+  }
+}
+
+async function installPackage(packageInfo) {
+  const packageSpec = packageInfo.name + packageInfo.version
+  core.info(`Installing "${packageSpec}" ...`)
+  await exec('pipx', ['install', packageSpec])
+
+  for (const injectPackage of packageInfo.inject) {
+    const injectSpec = injectPackage.name + injectPackage.version
+    core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
+    await exec('pipx', ['inject', packageInfo.name, injectSpec])
+  }
+
+  const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
+  const installedCommands = pipxMeta.main_package.apps || []
+
+  core.info(
+    `Package "${packageSpec}" installed with commands [${installedCommands}] using "${pipxMeta.python_version}" ...`
+  )
 }
 
 
@@ -91437,7 +91437,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
-/******/
+/******/ 	
 /******/ 	// The require function
 /******/ 	function __nccwpck_require__(moduleId) {
 /******/ 		// Check if module is in cache
@@ -91451,7 +91451,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
-/******/
+/******/ 	
 /******/ 		// Execute the module function
 /******/ 		var threw = true;
 /******/ 		try {
@@ -91460,16 +91460,16 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		} finally {
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 		}
-/******/
+/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/
+/******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat */
-/******/
+/******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/
+/******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
