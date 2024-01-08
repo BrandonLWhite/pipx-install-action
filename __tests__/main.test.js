@@ -23,14 +23,13 @@ const emptyPyprojectFile = path.join(testDataDir, 'pyproject.empty.toml')
 const actionYmlFile = path.join(__dirname, '..', 'action.yml')
 
 describe('action', () => {
-
   const inputsDefaults = {}
   const actionYml = yaml.load(fs.readFileSync(actionYmlFile))
   for (const [inputName, inputConfig] of Object.entries(actionYml.inputs)) {
-    inputsDefaults[inputName] = inputConfig.default;
+    inputsDefaults[inputName] = inputConfig.default
   }
 
-  let inputs = null;
+  let inputs = null
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -70,6 +69,8 @@ describe('action', () => {
     await main.run()
 
     expect(runMock).toHaveReturned()
-    expect(setFailedMock).toHaveBeenCalledWith("ENOENT: no such file or directory, open 'failfail.fail'")
+    expect(setFailedMock).toHaveBeenCalledWith(
+      "ENOENT: no such file or directory, open 'failfail.fail'"
+    )
   })
 })

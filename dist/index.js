@@ -89416,10 +89416,8 @@ async function pipxInstall(options) {
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
     systemHashInput
   )}`
-  const pipxSharedCacheHit = await restoreCache(
-    [pipxSharedDir],
-    pipxSharedCacheKey
-  )
+  const pipxSharedCacheHit =
+    cachePackages && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
 
   for (const [packageName, packageValue] of Object.entries(installPackages)) {
     const packageInfo = getNormalizedPackageInfo(packageName, packageValue)
@@ -89434,6 +89432,7 @@ async function pipxInstall(options) {
     const cacheHit = cachePackages && (await restoreCache([venvPath], cacheKey))
 
     if (cacheHit) {
+      const packageSpec = packageInfo.name + packageInfo.version
       core.info(`"${packageSpec}" restored from cache. Skipping install.`)
 
       // Recreate the command symlinks

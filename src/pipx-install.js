@@ -57,10 +57,8 @@ async function pipxInstall(options) {
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
     systemHashInput
   )}`
-  const pipxSharedCacheHit = cachePackages && (await restoreCache(
-    [pipxSharedDir],
-    pipxSharedCacheKey
-  ))
+  const pipxSharedCacheHit =
+    cachePackages && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
 
   for (const [packageName, packageValue] of Object.entries(installPackages)) {
     const packageInfo = getNormalizedPackageInfo(packageName, packageValue)
