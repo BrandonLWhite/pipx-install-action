@@ -2,8 +2,10 @@
  * Unit tests for the action's main functionality, src/main.js
  */
 const path = require('path')
+const fs = require('fs')
 const core = require('@actions/core')
 const github = require('@actions/github')
+const yaml = require('js-yaml')
 const main = require('../src/main')
 
 // Mock the GitHub Actions core library
@@ -15,52 +17,34 @@ const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
-
 const testDataDir = path.join(__dirname, 'data')
 const emptyPyprojectFile = path.join(testDataDir, 'pyproject.empty.toml')
 
+const actionYmlFile = path.join(__dirname, '..', 'action.yml')
+
 describe('action', () => {
+  const inputsDefaults = {}
+  const actionYml = yaml.load(fs.readFileSync(actionYmlFile))
+  for (const [inputName, inputConfig] of Object.entries(actionYml.inputs)) {
+    inputsDefaults[inputName] = inputConfig.default
+  }
+
+  let inputs = null
+
   beforeEach(() => {
     jest.clearAllMocks()
-  })
+    inputs = {
+      ...inputsDefaults,
+      'install-config-file': emptyPyprojectFile
+    }
 
-  it('sets the time output', async () => {
     // Mock the action's inputs
     getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'who-to-greet':
-          return 'World'
-        case 'pyproject-file':
-          return emptyPyprojectFile
-        default:
-          return ''
-      }
+      return inputs[name]
     })
-
-    // Mock the action's payload
-    github.context.payload = {}
-
-    await main.run()
-
-    expect(runMock).toHaveReturned()
-    expect(setOutputMock).toHaveBeenCalledWith('time', expect.any(String))
   })
 
   it('logs the event payload', async () => {
-    // Mock the action's inputs
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'who-to-greet':
-          return 'World'
-        case 'pyproject-file':
-          return emptyPyprojectFile
-        default:
-          return ''
-      }
-    })
-
     // Mock the action's payload
     github.context.payload = {
       actor: 'mona'
@@ -75,17 +59,7 @@ describe('action', () => {
   })
 
   it('sets a failed status', async () => {
-    // Mock the action's inputs
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'who-to-greet':
-          throw new Error('Something went wrong...')
-        case 'pyproject-file':
-          return emptyPyprojectFile
-        default:
-          return ''
-      }
-    })
+    inputs['install-config-file'] = 'failfail.fail'
 
     // Mock the action's payload
     github.context.payload = {
@@ -95,6 +69,8 @@ describe('action', () => {
     await main.run()
 
     expect(runMock).toHaveReturned()
-    expect(setFailedMock).toHaveBeenCalledWith('Something went wrong...')
+    expect(setFailedMock).toHaveBeenCalledWith(
+      "ENOENT: no such file or directory, open 'failfail.fail'"
+    )
   })
 })

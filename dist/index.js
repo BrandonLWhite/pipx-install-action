@@ -89332,17 +89332,10 @@ const { pipxInstall } = __nccwpck_require__(6426)
  */
 async function run() {
   try {
-    const pyprojectFile = core.getInput('pyproject-file') //  TODO BW: Default this to simply `pyproject.toml`
+    const installConfigFile = core.getInput('install-config-file')
+    const cachePackages = core.getInput('cache-packages')
 
-    await pipxInstall(pyprojectFile)
-
-    // The `who-to-greet` input is defined in action metadata file
-    const whoToGreet = core.getInput('who-to-greet', { required: true })
-    core.info(`Hello, ${whoToGreet}!`)
-
-    // Get the current time and set as an output
-    const time = new Date().toTimeString()
-    core.setOutput('time', time)
+    await pipxInstall({ installConfigFile, cachePackages })
 
     // Output the payload for debugging
     core.info(
@@ -89376,9 +89369,6 @@ const TOML = __nccwpck_require__(2901)
 const semver = __nccwpck_require__(1383)
 
 /**
-TODO Docs:
-- Version must be specified like: https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
-
 Note: There is currently a bug in actions/toolkit/cache where it is mutating the array of paths that are passed into
       restoreCache such that a subsequent call to saveCache utilizes a different array of keys.
       See https://github.com/actions/toolkit/issues/1579
@@ -89390,10 +89380,11 @@ module.exports = {
 
 const MIN_PIPX_VERSION = '1.1.0'
 
-async function pipxInstall(pyprojectFile) {
-  core.info(`Reading ${pyprojectFile}...`)
+async function pipxInstall(options) {
+  const { installConfigFile, cachePackages } = options
+  core.info(`Reading ${installConfigFile}...`)
 
-  const projectToml = await fs.readFile(pyprojectFile)
+  const projectToml = await fs.readFile(installConfigFile)
   const projectParsed = TOML.parse(projectToml)
 
   const installPackages = projectParsed?.tool?.['pipx-install']
@@ -89425,10 +89416,8 @@ async function pipxInstall(pyprojectFile) {
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
     systemHashInput
   )}`
-  const pipxSharedCacheHit = await restoreCache(
-    [pipxSharedDir],
-    pipxSharedCacheKey
-  )
+  const pipxSharedCacheHit =
+    cachePackages && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
 
   for (const [packageName, packageValue] of Object.entries(installPackages)) {
     const packageInfo = getNormalizedPackageInfo(packageName, packageValue)
@@ -89440,43 +89429,24 @@ async function pipxInstall(pyprojectFile) {
       cacheHashInput
     )}`
     const venvPath = path.join(pipxVenvsDir, packageInfo.name)
-    const cacheHit = await restoreCache([venvPath], cacheKey)
+    const cacheHit = cachePackages && (await restoreCache([venvPath], cacheKey))
 
     if (cacheHit) {
-      core.info(`Restored from cache. Skipping install`)
-
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const commandPaths = pipxMeta.main_package.app_paths || []
-      for (const commandPath of commandPaths) {
-        const targetPath = commandPath.__Path__
-        const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
-        await fs.symlink(targetPath, symlinkPath)
-      }
-    } else {
       const packageSpec = packageInfo.name + packageInfo.version
-      core.info(`Installing "${packageSpec}" ...`)
-      await exec('pipx', ['install', packageSpec])
+      core.info(`"${packageSpec}" restored from cache. Skipping install.`)
 
-      for (const injectPackage of packageInfo.inject) {
-        const injectSpec = injectPackage.name + injectPackage.version
-        core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
-        await exec('pipx', ['inject', packageInfo.name, injectSpec])
+      // Recreate the command symlinks
+      await createCommandSymlinks(packageInfo.name, pipxBinDir)
+    } else {
+      await installPackage(packageInfo)
+
+      if (cachePackages) {
+        await saveCache([venvPath], cacheKey)
       }
-
-      // TODO: Probably do this if cache enabled (default True)
-      // See what was installed.
-      const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
-      const installedCommands = pipxMeta.main_package.apps || []
-
-      core.info(
-        `Package "${packageSpec}" installed with commands [${installedCommands}] using ${pythonVersion}...`
-      )
-
-      await saveCache([venvPath], cacheKey)
     }
   }
 
-  if (!pipxSharedCacheHit) {
+  if (cachePackages && !pipxSharedCacheHit) {
     await saveCache([pipxSharedDir], pipxSharedCacheKey)
   }
 }
@@ -89529,6 +89499,35 @@ async function getInstalledPackageMetadata(packageName) {
 
 function hashObject(value) {
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex')
+}
+
+async function createCommandSymlinks(packageName, pipxBinDir) {
+  const pipxMeta = await getInstalledPackageMetadata(packageName)
+  const commandPaths = pipxMeta.main_package.app_paths || []
+  for (const commandPath of commandPaths) {
+    const targetPath = commandPath.__Path__
+    const symlinkPath = path.join(pipxBinDir, path.basename(targetPath))
+    await fs.symlink(targetPath, symlinkPath)
+  }
+}
+
+async function installPackage(packageInfo) {
+  const packageSpec = packageInfo.name + packageInfo.version
+  core.info(`Installing "${packageSpec}" ...`)
+  await exec('pipx', ['install', packageSpec])
+
+  for (const injectPackage of packageInfo.inject) {
+    const injectSpec = injectPackage.name + injectPackage.version
+    core.info(`Injecting "${injectSpec}" into ${packageInfo.name}...`)
+    await exec('pipx', ['inject', packageInfo.name, injectSpec])
+  }
+
+  const pipxMeta = await getInstalledPackageMetadata(packageInfo.name)
+  const installedCommands = pipxMeta.main_package.apps || []
+
+  core.info(
+    `Package "${packageSpec}" installed with commands [${installedCommands}] using "${pipxMeta.python_version}" ...`
+  )
 }
 
 
