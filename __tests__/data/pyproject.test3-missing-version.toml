@@ -1,0 +1,15 @@
+[project]
+name = "test-project"
+version = "0.1.0"
+description = "No description"
+authors = [
+    {name = "BrandonLWhite", email = "brandonlwhite@gmail.com"},
+]
+dependencies = []
+requires-python = "==3.11.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+[tool.pipx-install]
+sometool-without-version = {}
+

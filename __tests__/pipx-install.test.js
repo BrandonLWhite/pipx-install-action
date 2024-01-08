@@ -183,4 +183,14 @@ describe('pipx-install', () => {
       `Current Pipx version ${pipxVersion} does not meet minimum requirement`
     )
   })
+
+  it('rejects missing package version', async () => {
+    await expect(
+      pipxInstall({
+        installConfigFile: getPyprojectFile(
+          'pyproject.test3-missing-version.toml'
+        )
+      })
+    ).rejects.toThrow('The "version" field must be specified for package')
+  })
 })
