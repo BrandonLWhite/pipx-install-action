@@ -1,6 +1,9 @@
-name: pipx-install
+name: Install Python Tools
 description: Install Python CLI packages with pipx
 author: brandonlwhite@gmail.com
+branding:
+  icon: 'loader'
+  color: 'blue'
 
 inputs:
   install-config-file:
