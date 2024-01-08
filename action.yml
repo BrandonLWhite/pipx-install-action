@@ -1,4 +1,4 @@
-name: pipx Install
+name: pipx-install
 description: Install Python CLI packages with pipx
 author: brandonlwhite@gmail.com
 
