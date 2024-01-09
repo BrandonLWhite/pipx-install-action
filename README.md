@@ -90,9 +90,8 @@ folks searching for a solution to get their tool installed in their GHA workflow
 
 | Input                 | Default          | Description                     |
 | --------------------- | ---------------- | ------------------------------- |
-| `install-config-file` | `pyproject.toml` | Path to the TOML file that specifies the [tool.pipx-install] section  |
-| `cache-packages`      | `true`           | When 'true', packages will be saved to the repository's GitHub Action
-cache and restored whenever possible to avoid downloading from the upstream pacakge repository (eg. PyPI)  |
+| `install-config-file` | `pyproject.toml` | Path to the TOML file that specifies the [tool.pipx-install] section |
+| `cache-packages`      | `true`           | When 'true', packages will be saved to the repository's GitHub Action cache and restored whenever possible to avoid downloading from the upstream pacakge repository (eg. PyPI) |
 
 ## Outputs
 
