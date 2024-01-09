@@ -72,7 +72,7 @@ GitHub hosted runners!
 > `pipx-install` is only tested on Ubuntu Linux based runners at this time.  "It should work" on Windows and MacOS
 runners, but if you encounter an issue please file a bug report with all the details!
 
-## Python CLI tools that are good candidates for installing with pipx-install
+## Python command-line (CLI) tools that are good candidates for installing with pipx-install
 
 Here's a list of tools that are examples of what `pipx-install` is built to handle.  (This list is mostly here to help
 folks searching for a solution to get their tool installed in their GHA workflow):
@@ -90,8 +90,8 @@ folks searching for a solution to get their tool installed in their GHA workflow
 
 | Input                 | Default          | Description                     |
 | --------------------- | ---------------- | ------------------------------- |
-| `install-config-file` | `pyproject.toml` | Path to the TOML file that specifies the [tool.pipx-install] section |
-| `cache-packages`      | `true`           | When 'true', packages will be saved to the repository's GitHub Action cache and restored whenever possible to avoid downloading from the upstream pacakge repository (eg. PyPI) |
+| `install-config-file` | `pyproject.toml` | Path to the TOML file that specifies the `[tool.pipx-install]`` section |
+| `cache-packages`      | `true`           | When 'true', packages will be saved to the repository's GitHub Action cache and restored whenever possible to avoid downloading from the upstream package repository (eg. PyPI) |
 
 ## Outputs
 
