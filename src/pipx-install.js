@@ -45,9 +45,10 @@ async function pipxInstall(options) {
   const pipxBinDir = await getPipxEnv('PIPX_BIN_DIR')
   const pipxSharedDir = await getPipxEnv('PIPX_SHARED_LIBS')
   const pipxVenvsDir = await getPipxEnv('PIPX_LOCAL_VENVS')
+  const pipxPythonPath = await getPipxEnv('PIPX_DEFAULT_PYTHON')
 
   const pythonVersion = (
-    await getExecOutput('python', ['--version'])
+    await getExecOutput(pipxPythonPath, ['--version'])
   ).stdout.trim()
   const systemHashInput = {
     pipx: pipxVersion,
