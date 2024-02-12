@@ -1,9 +1,12 @@
+---
+google-site-verification: it_88gzwFHGDUZ8iqy7dofiBHs_3KXOQ6q0FVVJNfuc
+---
+
 # [pipx-install GitHub Action](https://github.com/brandonlwhite/pipx-install-action)
 
 [![GitHub Super-Linter](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
 ![CI](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/ci.yml/badge.svg)
 ![Test Converage](https://raw.githubusercontent.com/BrandonLWhite/pipx-install-action/main/badges/coverage.svg)
-<meta name="google-site-verification" content="-7SHJadr1iBGpupScP5tFrRiwE-PZjSKWsCdxojhsBk" />
 
 This action installs Python tools using [pipx](https://github.com/pypa/pipx).
 
