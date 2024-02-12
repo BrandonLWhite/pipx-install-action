@@ -1,7 +1,8 @@
-# pipx-install GitHub Action
+# [pipx-install GitHub Action](https://github.com/brandonlwhite/pipx-install-action)
 
-[![GitHub Super-Linter](https://github.com/actions/hello-world-javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/hello-world-javascript-action/actions/workflows/ci.yml/badge.svg)
+[![GitHub Super-Linter](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
+![CI](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/ci.yml/badge.svg)
+![Test Converage](https://raw.githubusercontent.com/BrandonLWhite/pipx-install-action/main/badges/coverage.svg)
 
 This action installs Python tools using [pipx](https://github.com/pypa/pipx).
 
