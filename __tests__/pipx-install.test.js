@@ -71,7 +71,7 @@ describe('pipx-install', () => {
         } else if (pipxCommand === 'list') {
           stdout = JSON.stringify({ venvs })
         }
-      } else if (command === 'python') {
+      } else if (command === 'PIPX_DEFAULT_PYTHON-FAKE-VALUE') {
         if (args[0] === '--version') {
           stdout = 'Python 3.11.5'
         }
