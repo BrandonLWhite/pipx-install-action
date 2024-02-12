@@ -23,7 +23,7 @@ There's also other types of tools that require or prefer a global install, such 
 [pothepoet](https://github.com/nat-n/poethepoet).
 
 `pipx-install` aims to fill that gap by providing Python developers an easy and familiar way to specify tooling
-prequisites needed to perform CI/CD operations on a Python project.
+prerequisites needed to perform CI/CD operations on a Python project.
 
 ## Basic Usage
 
