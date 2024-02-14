@@ -58,8 +58,12 @@ async function pipxInstall(options) {
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
     systemHashInput
   )}`
+
+  const pipxSharedPreExists = await checkForPipxSharedPreExists(pipxSharedDir)
+  const cachePipxShared = cachePackages && !pipxSharedPreExists
+
   const pipxSharedCacheHit =
-    cachePackages && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
+    cachePipxShared && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
 
   for (const [packageName, packageValue] of Object.entries(installPackages)) {
     const packageInfo = getNormalizedPackageInfo(packageName, packageValue)
@@ -88,7 +92,7 @@ async function pipxInstall(options) {
     }
   }
 
-  if (cachePackages && !pipxSharedCacheHit) {
+  if (cachePipxShared && !pipxSharedCacheHit) {
     await saveCache([pipxSharedDir], pipxSharedCacheKey)
   }
 }
@@ -170,4 +174,13 @@ async function installPackage(packageInfo) {
   core.info(
     `Package "${packageSpec}" installed with commands [${installedCommands}] using "${pipxMeta.python_version}" ...`
   )
+}
+
+async function checkForPipxSharedPreExists(pipxSharedDir) {
+  try {
+    await fs.stat(pipxSharedDir)
+    return true
+  } catch (error) {
+    return false
+  }
 }

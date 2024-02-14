@@ -1,7 +1,12 @@
-# pipx-install GitHub Action
+---
+google-site-verification: it_88gzwFHGDUZ8iqy7dofiBHs_3KXOQ6q0FVVJNfuc
+---
 
-[![GitHub Super-Linter](https://github.com/actions/hello-world-javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/hello-world-javascript-action/actions/workflows/ci.yml/badge.svg)
+# [pipx-install GitHub Action](https://github.com/brandonlwhite/pipx-install-action)
+
+[![GitHub Super-Linter](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
+![CI](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/ci.yml/badge.svg)
+![Test Converage](https://raw.githubusercontent.com/BrandonLWhite/pipx-install-action/main/badges/coverage.svg)
 
 This action installs Python tools using [pipx](https://github.com/pypa/pipx).
 
@@ -18,7 +23,7 @@ There's also other types of tools that require or prefer a global install, such 
 [pothepoet](https://github.com/nat-n/poethepoet).
 
 `pipx-install` aims to fill that gap by providing Python developers an easy and familiar way to specify tooling
-prequisites needed to perform CI/CD operations on a Python project.
+prerequisites needed to perform CI/CD operations on a Python project.
 
 ## Basic Usage
 

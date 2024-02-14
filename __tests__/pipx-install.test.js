@@ -193,4 +193,24 @@ describe('pipx-install', () => {
       })
     ).rejects.toThrow('The "version" field must be specified for package')
   })
+
+  it('does not cache pipx shared/ if it already exists', async () => {
+    const statMock = jest
+      .spyOn(fs, 'stat')
+      .mockImplementation(async statPath => {
+        return {}
+      })
+
+    await pipxInstall({
+      installConfigFile: getPyprojectFile('pyproject.test1.toml'),
+      cachePackages: true
+    })
+    expect(restoreCacheMock).not.toHaveBeenCalledWith(
+      'PIPX_SHARED_LIBS-FAKE-VALUE'
+    )
+    expect(saveCacheMock).not.toHaveBeenCalledWith(
+      'PIPX_SHARED_LIBS-FAKE-VALUE'
+    )
+    expect(statMock).toHaveBeenCalledWith('PIPX_SHARED_LIBS-FAKE-VALUE')
+  })
 })
