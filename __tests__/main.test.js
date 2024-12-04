@@ -53,9 +53,7 @@ describe('action', () => {
     await main.run()
 
     expect(runMock).toHaveReturned()
-    expect(infoMock).toHaveBeenCalledWith(
-      'Nothing to install.'
-    )
+    expect(infoMock).toHaveBeenCalledWith('Nothing to install.')
   })
 
   it('sets a failed status', async () => {
