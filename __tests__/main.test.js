@@ -44,7 +44,7 @@ describe('action', () => {
     })
   })
 
-  it('logs the event payload', async () => {
+  it('logs if nothing to do', async () => {
     // Mock the action's payload
     github.context.payload = {
       actor: 'mona'
@@ -54,7 +54,7 @@ describe('action', () => {
 
     expect(runMock).toHaveReturned()
     expect(infoMock).toHaveBeenCalledWith(
-      `The event payload: ${JSON.stringify(github.context.payload, null, 2)}`
+      'Nothing to install.'
     )
   })
 
