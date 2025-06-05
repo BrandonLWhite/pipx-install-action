@@ -63,7 +63,8 @@ async function pipxInstall(options) {
   const cachePipxShared = cachePackages && !pipxSharedPreExists
 
   const pipxSharedCacheHit =
-    cachePipxShared && (await restoreCache([pipxSharedDir], pipxSharedCacheKey))
+    cachePipxShared &&
+    (await tryRestoreCache([pipxSharedDir], pipxSharedCacheKey))
 
   for (const [packageName, packageValue] of Object.entries(installPackages)) {
     const packageInfo = getNormalizedPackageInfo(packageName, packageValue)
@@ -97,6 +98,14 @@ async function pipxInstall(options) {
   }
 }
 
+async function tryRestoreCache(paths, key) {
+  try {
+    return await restoreCache(paths, key)
+  } catch (error) {
+    core.warning(`Failed to restore cache for key "${key}": ${error}`)
+    return false
+  }
+}
 function getNormalizedPackageInfo(packageName, packageValue) {
   const packageVersion = getNormalizedPackageVersion(packageName, packageValue)
 
