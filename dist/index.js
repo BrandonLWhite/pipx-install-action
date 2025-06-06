@@ -220,7 +220,7 @@ function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsAr
             };
             const response = yield twirpClient.GetCacheEntryDownloadURL(request);
             if (!response.ok) {
-                core.warning(`Cache not found for keys: ${keys.join(', ')}`);
+                core.debug(`Cache not found for version ${request.version} of keys: ${keys.join(', ')}`);
                 return undefined;
             }
             core.info(`Cache hit for: ${request.key}`);
@@ -412,12 +412,20 @@ function saveCacheV2(paths, key, options, enableCrossOsArchive = false) {
                 key,
                 version
             };
-            const response = yield twirpClient.CreateCacheEntry(request);
-            if (!response.ok) {
+            let signedUploadUrl;
+            try {
+                const response = yield twirpClient.CreateCacheEntry(request);
+                if (!response.ok) {
+                    throw new Error('Response was not ok');
+                }
+                signedUploadUrl = response.signedUploadUrl;
+            }
+            catch (error) {
+                core.debug(`Failed to reserve cache: ${error}`);
                 throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache.`);
             }
             core.debug(`Attempting to upload cache located at: ${archivePath}`);
-            yield cacheHttpClient.saveCache(cacheId, archivePath, response.signedUploadUrl, options);
+            yield cacheHttpClient.saveCache(cacheId, archivePath, signedUploadUrl, options);
             const finalizeRequest = {
                 key,
                 version,
@@ -458,156 +466,13 @@ function saveCacheV2(paths, key, options, enableCrossOsArchive = false) {
 
 /***/ }),
 
-/***/ 8200:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Timestamp = void 0;
-const runtime_1 = __nccwpck_require__(8886);
-const runtime_2 = __nccwpck_require__(8886);
-const runtime_3 = __nccwpck_require__(8886);
-const runtime_4 = __nccwpck_require__(8886);
-const runtime_5 = __nccwpck_require__(8886);
-const runtime_6 = __nccwpck_require__(8886);
-const runtime_7 = __nccwpck_require__(8886);
-// @generated message type with reflection information, may provide speed optimized methods
-class Timestamp$Type extends runtime_7.MessageType {
-    constructor() {
-        super("google.protobuf.Timestamp", [
-            { no: 1, name: "seconds", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 2, name: "nanos", kind: "scalar", T: 5 /*ScalarType.INT32*/ }
-        ]);
-    }
-    /**
-     * Creates a new `Timestamp` for the current time.
-     */
-    now() {
-        const msg = this.create();
-        const ms = Date.now();
-        msg.seconds = runtime_6.PbLong.from(Math.floor(ms / 1000)).toString();
-        msg.nanos = (ms % 1000) * 1000000;
-        return msg;
-    }
-    /**
-     * Converts a `Timestamp` to a JavaScript Date.
-     */
-    toDate(message) {
-        return new Date(runtime_6.PbLong.from(message.seconds).toNumber() * 1000 + Math.ceil(message.nanos / 1000000));
-    }
-    /**
-     * Converts a JavaScript Date to a `Timestamp`.
-     */
-    fromDate(date) {
-        const msg = this.create();
-        const ms = date.getTime();
-        msg.seconds = runtime_6.PbLong.from(Math.floor(ms / 1000)).toString();
-        msg.nanos = (ms % 1000) * 1000000;
-        return msg;
-    }
-    /**
-     * In JSON format, the `Timestamp` type is encoded as a string
-     * in the RFC 3339 format.
-     */
-    internalJsonWrite(message, options) {
-        let ms = runtime_6.PbLong.from(message.seconds).toNumber() * 1000;
-        if (ms < Date.parse("0001-01-01T00:00:00Z") || ms > Date.parse("9999-12-31T23:59:59Z"))
-            throw new Error("Unable to encode Timestamp to JSON. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.");
-        if (message.nanos < 0)
-            throw new Error("Unable to encode invalid Timestamp to JSON. Nanos must not be negative.");
-        let z = "Z";
-        if (message.nanos > 0) {
-            let nanosStr = (message.nanos + 1000000000).toString().substring(1);
-            if (nanosStr.substring(3) === "000000")
-                z = "." + nanosStr.substring(0, 3) + "Z";
-            else if (nanosStr.substring(6) === "000")
-                z = "." + nanosStr.substring(0, 6) + "Z";
-            else
-                z = "." + nanosStr + "Z";
-        }
-        return new Date(ms).toISOString().replace(".000Z", z);
-    }
-    /**
-     * In JSON format, the `Timestamp` type is encoded as a string
-     * in the RFC 3339 format.
-     */
-    internalJsonRead(json, options, target) {
-        if (typeof json !== "string")
-            throw new Error("Unable to parse Timestamp from JSON " + (0, runtime_5.typeofJsonValue)(json) + ".");
-        let matches = json.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:Z|\.([0-9]{3,9})Z|([+-][0-9][0-9]:[0-9][0-9]))$/);
-        if (!matches)
-            throw new Error("Unable to parse Timestamp from JSON. Invalid format.");
-        let ms = Date.parse(matches[1] + "-" + matches[2] + "-" + matches[3] + "T" + matches[4] + ":" + matches[5] + ":" + matches[6] + (matches[8] ? matches[8] : "Z"));
-        if (Number.isNaN(ms))
-            throw new Error("Unable to parse Timestamp from JSON. Invalid value.");
-        if (ms < Date.parse("0001-01-01T00:00:00Z") || ms > Date.parse("9999-12-31T23:59:59Z"))
-            throw new globalThis.Error("Unable to parse Timestamp from JSON. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.");
-        if (!target)
-            target = this.create();
-        target.seconds = runtime_6.PbLong.from(ms / 1000).toString();
-        target.nanos = 0;
-        if (matches[7])
-            target.nanos = (parseInt("1" + matches[7] + "0".repeat(9 - matches[7].length)) - 1000000000);
-        return target;
-    }
-    create(value) {
-        const message = { seconds: "0", nanos: 0 };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* int64 seconds */ 1:
-                    message.seconds = reader.int64().toString();
-                    break;
-                case /* int32 nanos */ 2:
-                    message.nanos = reader.int32();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* int64 seconds = 1; */
-        if (message.seconds !== "0")
-            writer.tag(1, runtime_1.WireType.Varint).int64(message.seconds);
-        /* int32 nanos = 2; */
-        if (message.nanos !== 0)
-            writer.tag(2, runtime_1.WireType.Varint).int32(message.nanos);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message google.protobuf.Timestamp
- */
-exports.Timestamp = new Timestamp$Type();
-//# sourceMappingURL=timestamp.js.map
-
-/***/ }),
-
 /***/ 3156:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CacheService = exports.LookupCacheEntryResponse = exports.LookupCacheEntryRequest = exports.ListCacheEntriesResponse = exports.ListCacheEntriesRequest = exports.DeleteCacheEntryResponse = exports.DeleteCacheEntryRequest = exports.GetCacheEntryDownloadURLResponse = exports.GetCacheEntryDownloadURLRequest = exports.FinalizeCacheEntryUploadResponse = exports.FinalizeCacheEntryUploadRequest = exports.CreateCacheEntryResponse = exports.CreateCacheEntryRequest = void 0;
+exports.CacheService = exports.GetCacheEntryDownloadURLResponse = exports.GetCacheEntryDownloadURLRequest = exports.FinalizeCacheEntryUploadResponse = exports.FinalizeCacheEntryUploadRequest = exports.CreateCacheEntryResponse = exports.CreateCacheEntryRequest = void 0;
 // @generated by protobuf-ts 2.9.1 with parameter long_type_string,client_none,generate_dependencies
 // @generated from protobuf file "results/api/v1/cache.proto" (package "github.actions.results.api.v1", syntax proto3)
 // tslint:disable
@@ -617,7 +482,6 @@ const runtime_2 = __nccwpck_require__(8886);
 const runtime_3 = __nccwpck_require__(8886);
 const runtime_4 = __nccwpck_require__(8886);
 const runtime_5 = __nccwpck_require__(8886);
-const cacheentry_1 = __nccwpck_require__(5893);
 const cachemetadata_1 = __nccwpck_require__(9444);
 // @generated message type with reflection information, may provide speed optimized methods
 class CreateCacheEntryRequest$Type extends runtime_5.MessageType {
@@ -985,376 +849,25 @@ class GetCacheEntryDownloadURLResponse$Type extends runtime_5.MessageType {
  * @generated MessageType for protobuf message github.actions.results.api.v1.GetCacheEntryDownloadURLResponse
  */
 exports.GetCacheEntryDownloadURLResponse = new GetCacheEntryDownloadURLResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class DeleteCacheEntryRequest$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.DeleteCacheEntryRequest", [
-            { no: 1, name: "metadata", kind: "message", T: () => cachemetadata_1.CacheMetadata },
-            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
-        ]);
-    }
-    create(value) {
-        const message = { key: "" };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* github.actions.results.entities.v1.CacheMetadata metadata */ 1:
-                    message.metadata = cachemetadata_1.CacheMetadata.internalBinaryRead(reader, reader.uint32(), options, message.metadata);
-                    break;
-                case /* string key */ 2:
-                    message.key = reader.string();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* github.actions.results.entities.v1.CacheMetadata metadata = 1; */
-        if (message.metadata)
-            cachemetadata_1.CacheMetadata.internalBinaryWrite(message.metadata, writer.tag(1, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        /* string key = 2; */
-        if (message.key !== "")
-            writer.tag(2, runtime_1.WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.DeleteCacheEntryRequest
- */
-exports.DeleteCacheEntryRequest = new DeleteCacheEntryRequest$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class DeleteCacheEntryResponse$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.DeleteCacheEntryResponse", [
-            { no: 1, name: "ok", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 2, name: "entry_id", kind: "scalar", T: 3 /*ScalarType.INT64*/ }
-        ]);
-    }
-    create(value) {
-        const message = { ok: false, entryId: "0" };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* bool ok */ 1:
-                    message.ok = reader.bool();
-                    break;
-                case /* int64 entry_id */ 2:
-                    message.entryId = reader.int64().toString();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* bool ok = 1; */
-        if (message.ok !== false)
-            writer.tag(1, runtime_1.WireType.Varint).bool(message.ok);
-        /* int64 entry_id = 2; */
-        if (message.entryId !== "0")
-            writer.tag(2, runtime_1.WireType.Varint).int64(message.entryId);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.DeleteCacheEntryResponse
- */
-exports.DeleteCacheEntryResponse = new DeleteCacheEntryResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ListCacheEntriesRequest$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.ListCacheEntriesRequest", [
-            { no: 1, name: "metadata", kind: "message", T: () => cachemetadata_1.CacheMetadata },
-            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "restore_keys", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
-        ]);
-    }
-    create(value) {
-        const message = { key: "", restoreKeys: [] };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* github.actions.results.entities.v1.CacheMetadata metadata */ 1:
-                    message.metadata = cachemetadata_1.CacheMetadata.internalBinaryRead(reader, reader.uint32(), options, message.metadata);
-                    break;
-                case /* string key */ 2:
-                    message.key = reader.string();
-                    break;
-                case /* repeated string restore_keys */ 3:
-                    message.restoreKeys.push(reader.string());
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* github.actions.results.entities.v1.CacheMetadata metadata = 1; */
-        if (message.metadata)
-            cachemetadata_1.CacheMetadata.internalBinaryWrite(message.metadata, writer.tag(1, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        /* string key = 2; */
-        if (message.key !== "")
-            writer.tag(2, runtime_1.WireType.LengthDelimited).string(message.key);
-        /* repeated string restore_keys = 3; */
-        for (let i = 0; i < message.restoreKeys.length; i++)
-            writer.tag(3, runtime_1.WireType.LengthDelimited).string(message.restoreKeys[i]);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.ListCacheEntriesRequest
- */
-exports.ListCacheEntriesRequest = new ListCacheEntriesRequest$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ListCacheEntriesResponse$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.ListCacheEntriesResponse", [
-            { no: 1, name: "entries", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => cacheentry_1.CacheEntry }
-        ]);
-    }
-    create(value) {
-        const message = { entries: [] };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* repeated github.actions.results.entities.v1.CacheEntry entries */ 1:
-                    message.entries.push(cacheentry_1.CacheEntry.internalBinaryRead(reader, reader.uint32(), options));
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* repeated github.actions.results.entities.v1.CacheEntry entries = 1; */
-        for (let i = 0; i < message.entries.length; i++)
-            cacheentry_1.CacheEntry.internalBinaryWrite(message.entries[i], writer.tag(1, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.ListCacheEntriesResponse
- */
-exports.ListCacheEntriesResponse = new ListCacheEntriesResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class LookupCacheEntryRequest$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.LookupCacheEntryRequest", [
-            { no: 1, name: "metadata", kind: "message", T: () => cachemetadata_1.CacheMetadata },
-            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "restore_keys", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "version", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
-        ]);
-    }
-    create(value) {
-        const message = { key: "", restoreKeys: [], version: "" };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* github.actions.results.entities.v1.CacheMetadata metadata */ 1:
-                    message.metadata = cachemetadata_1.CacheMetadata.internalBinaryRead(reader, reader.uint32(), options, message.metadata);
-                    break;
-                case /* string key */ 2:
-                    message.key = reader.string();
-                    break;
-                case /* repeated string restore_keys */ 3:
-                    message.restoreKeys.push(reader.string());
-                    break;
-                case /* string version */ 4:
-                    message.version = reader.string();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* github.actions.results.entities.v1.CacheMetadata metadata = 1; */
-        if (message.metadata)
-            cachemetadata_1.CacheMetadata.internalBinaryWrite(message.metadata, writer.tag(1, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        /* string key = 2; */
-        if (message.key !== "")
-            writer.tag(2, runtime_1.WireType.LengthDelimited).string(message.key);
-        /* repeated string restore_keys = 3; */
-        for (let i = 0; i < message.restoreKeys.length; i++)
-            writer.tag(3, runtime_1.WireType.LengthDelimited).string(message.restoreKeys[i]);
-        /* string version = 4; */
-        if (message.version !== "")
-            writer.tag(4, runtime_1.WireType.LengthDelimited).string(message.version);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.LookupCacheEntryRequest
- */
-exports.LookupCacheEntryRequest = new LookupCacheEntryRequest$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class LookupCacheEntryResponse$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.api.v1.LookupCacheEntryResponse", [
-            { no: 1, name: "exists", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 2, name: "entry", kind: "message", T: () => cacheentry_1.CacheEntry }
-        ]);
-    }
-    create(value) {
-        const message = { exists: false };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* bool exists */ 1:
-                    message.exists = reader.bool();
-                    break;
-                case /* github.actions.results.entities.v1.CacheEntry entry */ 2:
-                    message.entry = cacheentry_1.CacheEntry.internalBinaryRead(reader, reader.uint32(), options, message.entry);
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* bool exists = 1; */
-        if (message.exists !== false)
-            writer.tag(1, runtime_1.WireType.Varint).bool(message.exists);
-        /* github.actions.results.entities.v1.CacheEntry entry = 2; */
-        if (message.entry)
-            cacheentry_1.CacheEntry.internalBinaryWrite(message.entry, writer.tag(2, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.api.v1.LookupCacheEntryResponse
- */
-exports.LookupCacheEntryResponse = new LookupCacheEntryResponse$Type();
 /**
  * @generated ServiceType for protobuf service github.actions.results.api.v1.CacheService
  */
 exports.CacheService = new runtime_rpc_1.ServiceType("github.actions.results.api.v1.CacheService", [
     { name: "CreateCacheEntry", options: {}, I: exports.CreateCacheEntryRequest, O: exports.CreateCacheEntryResponse },
     { name: "FinalizeCacheEntryUpload", options: {}, I: exports.FinalizeCacheEntryUploadRequest, O: exports.FinalizeCacheEntryUploadResponse },
-    { name: "GetCacheEntryDownloadURL", options: {}, I: exports.GetCacheEntryDownloadURLRequest, O: exports.GetCacheEntryDownloadURLResponse },
-    { name: "DeleteCacheEntry", options: {}, I: exports.DeleteCacheEntryRequest, O: exports.DeleteCacheEntryResponse },
-    { name: "ListCacheEntries", options: {}, I: exports.ListCacheEntriesRequest, O: exports.ListCacheEntriesResponse },
-    { name: "LookupCacheEntry", options: {}, I: exports.LookupCacheEntryRequest, O: exports.LookupCacheEntryResponse }
+    { name: "GetCacheEntryDownloadURL", options: {}, I: exports.GetCacheEntryDownloadURLRequest, O: exports.GetCacheEntryDownloadURLResponse }
 ]);
 //# sourceMappingURL=cache.js.map
 
 /***/ }),
 
-/***/ 564:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ 1486:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createCacheServiceServer = exports.CacheServiceMethodList = exports.CacheServiceMethod = exports.CacheServiceClientProtobuf = exports.CacheServiceClientJSON = void 0;
-const twirp_ts_1 = __nccwpck_require__(430);
+exports.CacheServiceClientProtobuf = exports.CacheServiceClientJSON = void 0;
 const cache_1 = __nccwpck_require__(3156);
 class CacheServiceClientJSON {
     constructor(rpc) {
@@ -1362,9 +875,6 @@ class CacheServiceClientJSON {
         this.CreateCacheEntry.bind(this);
         this.FinalizeCacheEntryUpload.bind(this);
         this.GetCacheEntryDownloadURL.bind(this);
-        this.DeleteCacheEntry.bind(this);
-        this.ListCacheEntries.bind(this);
-        this.LookupCacheEntry.bind(this);
     }
     CreateCacheEntry(request) {
         const data = cache_1.CreateCacheEntryRequest.toJson(request, {
@@ -1396,36 +906,6 @@ class CacheServiceClientJSON {
             ignoreUnknownFields: true,
         }));
     }
-    DeleteCacheEntry(request) {
-        const data = cache_1.DeleteCacheEntryRequest.toJson(request, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        });
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "DeleteCacheEntry", "application/json", data);
-        return promise.then((data) => cache_1.DeleteCacheEntryResponse.fromJson(data, {
-            ignoreUnknownFields: true,
-        }));
-    }
-    ListCacheEntries(request) {
-        const data = cache_1.ListCacheEntriesRequest.toJson(request, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        });
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "ListCacheEntries", "application/json", data);
-        return promise.then((data) => cache_1.ListCacheEntriesResponse.fromJson(data, {
-            ignoreUnknownFields: true,
-        }));
-    }
-    LookupCacheEntry(request) {
-        const data = cache_1.LookupCacheEntryRequest.toJson(request, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        });
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "LookupCacheEntry", "application/json", data);
-        return promise.then((data) => cache_1.LookupCacheEntryResponse.fromJson(data, {
-            ignoreUnknownFields: true,
-        }));
-    }
 }
 exports.CacheServiceClientJSON = CacheServiceClientJSON;
 class CacheServiceClientProtobuf {
@@ -1434,9 +914,6 @@ class CacheServiceClientProtobuf {
         this.CreateCacheEntry.bind(this);
         this.FinalizeCacheEntryUpload.bind(this);
         this.GetCacheEntryDownloadURL.bind(this);
-        this.DeleteCacheEntry.bind(this);
-        this.ListCacheEntries.bind(this);
-        this.LookupCacheEntry.bind(this);
     }
     CreateCacheEntry(request) {
         const data = cache_1.CreateCacheEntryRequest.toBinary(request);
@@ -1453,610 +930,9 @@ class CacheServiceClientProtobuf {
         const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "GetCacheEntryDownloadURL", "application/protobuf", data);
         return promise.then((data) => cache_1.GetCacheEntryDownloadURLResponse.fromBinary(data));
     }
-    DeleteCacheEntry(request) {
-        const data = cache_1.DeleteCacheEntryRequest.toBinary(request);
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "DeleteCacheEntry", "application/protobuf", data);
-        return promise.then((data) => cache_1.DeleteCacheEntryResponse.fromBinary(data));
-    }
-    ListCacheEntries(request) {
-        const data = cache_1.ListCacheEntriesRequest.toBinary(request);
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "ListCacheEntries", "application/protobuf", data);
-        return promise.then((data) => cache_1.ListCacheEntriesResponse.fromBinary(data));
-    }
-    LookupCacheEntry(request) {
-        const data = cache_1.LookupCacheEntryRequest.toBinary(request);
-        const promise = this.rpc.request("github.actions.results.api.v1.CacheService", "LookupCacheEntry", "application/protobuf", data);
-        return promise.then((data) => cache_1.LookupCacheEntryResponse.fromBinary(data));
-    }
 }
 exports.CacheServiceClientProtobuf = CacheServiceClientProtobuf;
-var CacheServiceMethod;
-(function (CacheServiceMethod) {
-    CacheServiceMethod["CreateCacheEntry"] = "CreateCacheEntry";
-    CacheServiceMethod["FinalizeCacheEntryUpload"] = "FinalizeCacheEntryUpload";
-    CacheServiceMethod["GetCacheEntryDownloadURL"] = "GetCacheEntryDownloadURL";
-    CacheServiceMethod["DeleteCacheEntry"] = "DeleteCacheEntry";
-    CacheServiceMethod["ListCacheEntries"] = "ListCacheEntries";
-    CacheServiceMethod["LookupCacheEntry"] = "LookupCacheEntry";
-})(CacheServiceMethod || (exports.CacheServiceMethod = CacheServiceMethod = {}));
-exports.CacheServiceMethodList = [
-    CacheServiceMethod.CreateCacheEntry,
-    CacheServiceMethod.FinalizeCacheEntryUpload,
-    CacheServiceMethod.GetCacheEntryDownloadURL,
-    CacheServiceMethod.DeleteCacheEntry,
-    CacheServiceMethod.ListCacheEntries,
-    CacheServiceMethod.LookupCacheEntry,
-];
-function createCacheServiceServer(service) {
-    return new twirp_ts_1.TwirpServer({
-        service,
-        packageName: "github.actions.results.api.v1",
-        serviceName: "CacheService",
-        methodList: exports.CacheServiceMethodList,
-        matchRoute: matchCacheServiceRoute,
-    });
-}
-exports.createCacheServiceServer = createCacheServiceServer;
-function matchCacheServiceRoute(method, events) {
-    switch (method) {
-        case "CreateCacheEntry":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "CreateCacheEntry" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceCreateCacheEntryRequest(ctx, service, data, interceptors);
-            });
-        case "FinalizeCacheEntryUpload":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "FinalizeCacheEntryUpload" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceFinalizeCacheEntryUploadRequest(ctx, service, data, interceptors);
-            });
-        case "GetCacheEntryDownloadURL":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "GetCacheEntryDownloadURL" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceGetCacheEntryDownloadURLRequest(ctx, service, data, interceptors);
-            });
-        case "DeleteCacheEntry":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "DeleteCacheEntry" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceDeleteCacheEntryRequest(ctx, service, data, interceptors);
-            });
-        case "ListCacheEntries":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "ListCacheEntries" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceListCacheEntriesRequest(ctx, service, data, interceptors);
-            });
-        case "LookupCacheEntry":
-            return (ctx, service, data, interceptors) => __awaiter(this, void 0, void 0, function* () {
-                ctx = Object.assign(Object.assign({}, ctx), { methodName: "LookupCacheEntry" });
-                yield events.onMatch(ctx);
-                return handleCacheServiceLookupCacheEntryRequest(ctx, service, data, interceptors);
-            });
-        default:
-            events.onNotFound();
-            const msg = `no handler found`;
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceCreateCacheEntryRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceCreateCacheEntryJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceCreateCacheEntryProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceFinalizeCacheEntryUploadRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceFinalizeCacheEntryUploadJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceFinalizeCacheEntryUploadProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceGetCacheEntryDownloadURLRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceGetCacheEntryDownloadURLJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceGetCacheEntryDownloadURLProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceDeleteCacheEntryRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceDeleteCacheEntryJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceDeleteCacheEntryProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceListCacheEntriesRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceListCacheEntriesJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceListCacheEntriesProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceLookupCacheEntryRequest(ctx, service, data, interceptors) {
-    switch (ctx.contentType) {
-        case twirp_ts_1.TwirpContentType.JSON:
-            return handleCacheServiceLookupCacheEntryJSON(ctx, service, data, interceptors);
-        case twirp_ts_1.TwirpContentType.Protobuf:
-            return handleCacheServiceLookupCacheEntryProtobuf(ctx, service, data, interceptors);
-        default:
-            const msg = "unexpected Content-Type";
-            throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.BadRoute, msg);
-    }
-}
-function handleCacheServiceCreateCacheEntryJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.CreateCacheEntryRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.CreateCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.CreateCacheEntry(ctx, request);
-        }
-        return JSON.stringify(cache_1.CreateCacheEntryResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceFinalizeCacheEntryUploadJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.FinalizeCacheEntryUploadRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.FinalizeCacheEntryUpload(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.FinalizeCacheEntryUpload(ctx, request);
-        }
-        return JSON.stringify(cache_1.FinalizeCacheEntryUploadResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceGetCacheEntryDownloadURLJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.GetCacheEntryDownloadURLRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.GetCacheEntryDownloadURL(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.GetCacheEntryDownloadURL(ctx, request);
-        }
-        return JSON.stringify(cache_1.GetCacheEntryDownloadURLResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceDeleteCacheEntryJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.DeleteCacheEntryRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.DeleteCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.DeleteCacheEntry(ctx, request);
-        }
-        return JSON.stringify(cache_1.DeleteCacheEntryResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceListCacheEntriesJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.ListCacheEntriesRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.ListCacheEntries(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.ListCacheEntries(ctx, request);
-        }
-        return JSON.stringify(cache_1.ListCacheEntriesResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceLookupCacheEntryJSON(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            const body = JSON.parse(data.toString() || "{}");
-            request = cache_1.LookupCacheEntryRequest.fromJson(body, {
-                ignoreUnknownFields: true,
-            });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the json request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.LookupCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.LookupCacheEntry(ctx, request);
-        }
-        return JSON.stringify(cache_1.LookupCacheEntryResponse.toJson(response, {
-            useProtoFieldName: true,
-            emitDefaultValues: false,
-        }));
-    });
-}
-function handleCacheServiceCreateCacheEntryProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.CreateCacheEntryRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.CreateCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.CreateCacheEntry(ctx, request);
-        }
-        return Buffer.from(cache_1.CreateCacheEntryResponse.toBinary(response));
-    });
-}
-function handleCacheServiceFinalizeCacheEntryUploadProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.FinalizeCacheEntryUploadRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.FinalizeCacheEntryUpload(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.FinalizeCacheEntryUpload(ctx, request);
-        }
-        return Buffer.from(cache_1.FinalizeCacheEntryUploadResponse.toBinary(response));
-    });
-}
-function handleCacheServiceGetCacheEntryDownloadURLProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.GetCacheEntryDownloadURLRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.GetCacheEntryDownloadURL(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.GetCacheEntryDownloadURL(ctx, request);
-        }
-        return Buffer.from(cache_1.GetCacheEntryDownloadURLResponse.toBinary(response));
-    });
-}
-function handleCacheServiceDeleteCacheEntryProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.DeleteCacheEntryRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.DeleteCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.DeleteCacheEntry(ctx, request);
-        }
-        return Buffer.from(cache_1.DeleteCacheEntryResponse.toBinary(response));
-    });
-}
-function handleCacheServiceListCacheEntriesProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.ListCacheEntriesRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.ListCacheEntries(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.ListCacheEntries(ctx, request);
-        }
-        return Buffer.from(cache_1.ListCacheEntriesResponse.toBinary(response));
-    });
-}
-function handleCacheServiceLookupCacheEntryProtobuf(ctx, service, data, interceptors) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let request;
-        let response;
-        try {
-            request = cache_1.LookupCacheEntryRequest.fromBinary(data);
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                const msg = "the protobuf request could not be decoded";
-                throw new twirp_ts_1.TwirpError(twirp_ts_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-            }
-        }
-        if (interceptors && interceptors.length > 0) {
-            const interceptor = (0, twirp_ts_1.chainInterceptors)(...interceptors);
-            response = yield interceptor(ctx, request, (ctx, inputReq) => {
-                return service.LookupCacheEntry(ctx, inputReq);
-            });
-        }
-        else {
-            response = yield service.LookupCacheEntry(ctx, request);
-        }
-        return Buffer.from(cache_1.LookupCacheEntryResponse.toBinary(response));
-    });
-}
-//# sourceMappingURL=cache.twirp.js.map
-
-/***/ }),
-
-/***/ 5893:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CacheEntry = void 0;
-const runtime_1 = __nccwpck_require__(8886);
-const runtime_2 = __nccwpck_require__(8886);
-const runtime_3 = __nccwpck_require__(8886);
-const runtime_4 = __nccwpck_require__(8886);
-const runtime_5 = __nccwpck_require__(8886);
-const timestamp_1 = __nccwpck_require__(8200);
-// @generated message type with reflection information, may provide speed optimized methods
-class CacheEntry$Type extends runtime_5.MessageType {
-    constructor() {
-        super("github.actions.results.entities.v1.CacheEntry", [
-            { no: 1, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "hash", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "size_bytes", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 4, name: "scope", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 5, name: "version", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 6, name: "created_at", kind: "message", T: () => timestamp_1.Timestamp },
-            { no: 7, name: "last_accessed_at", kind: "message", T: () => timestamp_1.Timestamp },
-            { no: 8, name: "expires_at", kind: "message", T: () => timestamp_1.Timestamp }
-        ]);
-    }
-    create(value) {
-        const message = { key: "", hash: "", sizeBytes: "0", scope: "", version: "" };
-        globalThis.Object.defineProperty(message, runtime_4.MESSAGE_TYPE, { enumerable: false, value: this });
-        if (value !== undefined)
-            (0, runtime_3.reflectionMergePartial)(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* string key */ 1:
-                    message.key = reader.string();
-                    break;
-                case /* string hash */ 2:
-                    message.hash = reader.string();
-                    break;
-                case /* int64 size_bytes */ 3:
-                    message.sizeBytes = reader.int64().toString();
-                    break;
-                case /* string scope */ 4:
-                    message.scope = reader.string();
-                    break;
-                case /* string version */ 5:
-                    message.version = reader.string();
-                    break;
-                case /* google.protobuf.Timestamp created_at */ 6:
-                    message.createdAt = timestamp_1.Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.createdAt);
-                    break;
-                case /* google.protobuf.Timestamp last_accessed_at */ 7:
-                    message.lastAccessedAt = timestamp_1.Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.lastAccessedAt);
-                    break;
-                case /* google.protobuf.Timestamp expires_at */ 8:
-                    message.expiresAt = timestamp_1.Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.expiresAt);
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? runtime_2.UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* string key = 1; */
-        if (message.key !== "")
-            writer.tag(1, runtime_1.WireType.LengthDelimited).string(message.key);
-        /* string hash = 2; */
-        if (message.hash !== "")
-            writer.tag(2, runtime_1.WireType.LengthDelimited).string(message.hash);
-        /* int64 size_bytes = 3; */
-        if (message.sizeBytes !== "0")
-            writer.tag(3, runtime_1.WireType.Varint).int64(message.sizeBytes);
-        /* string scope = 4; */
-        if (message.scope !== "")
-            writer.tag(4, runtime_1.WireType.LengthDelimited).string(message.scope);
-        /* string version = 5; */
-        if (message.version !== "")
-            writer.tag(5, runtime_1.WireType.LengthDelimited).string(message.version);
-        /* google.protobuf.Timestamp created_at = 6; */
-        if (message.createdAt)
-            timestamp_1.Timestamp.internalBinaryWrite(message.createdAt, writer.tag(6, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        /* google.protobuf.Timestamp last_accessed_at = 7; */
-        if (message.lastAccessedAt)
-            timestamp_1.Timestamp.internalBinaryWrite(message.lastAccessedAt, writer.tag(7, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        /* google.protobuf.Timestamp expires_at = 8; */
-        if (message.expiresAt)
-            timestamp_1.Timestamp.internalBinaryWrite(message.expiresAt, writer.tag(8, runtime_1.WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? runtime_2.UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message github.actions.results.entities.v1.CacheEntry
- */
-exports.CacheEntry = new CacheEntry$Type();
-//# sourceMappingURL=cacheentry.js.map
+//# sourceMappingURL=cache.twirp-client.js.map
 
 /***/ }),
 
@@ -3327,7 +2203,8 @@ const config_1 = __nccwpck_require__(7606);
 const cacheUtils_1 = __nccwpck_require__(680);
 const auth_1 = __nccwpck_require__(4552);
 const http_client_1 = __nccwpck_require__(4844);
-const cache_twirp_1 = __nccwpck_require__(564);
+const cache_twirp_client_1 = __nccwpck_require__(1486);
+const util_1 = __nccwpck_require__(7564);
 /**
  * This class is a wrapper around the CacheServiceClientJSON class generated by Twirp.
  *
@@ -3387,6 +2264,7 @@ class CacheServiceClient {
                     (0, core_1.debug)(`[Response] - ${response.message.statusCode}`);
                     (0, core_1.debug)(`Headers: ${JSON.stringify(response.message.headers, null, 2)}`);
                     const body = JSON.parse(rawBody);
+                    (0, util_1.maskSecretUrls)(body);
                     (0, core_1.debug)(`Body: ${JSON.stringify(body, null, 2)}`);
                     if (this.isSuccessStatusCode(statusCode)) {
                         return { response, body };
@@ -3464,7 +2342,7 @@ class CacheServiceClient {
 }
 function internalCacheTwirpClient(options) {
     const client = new CacheServiceClient((0, user_agent_1.getUserAgentString)(), options === null || options === void 0 ? void 0 : options.maxAttempts, options === null || options === void 0 ? void 0 : options.retryIntervalMs, options === null || options === void 0 ? void 0 : options.retryMultiplier);
-    return new cache_twirp_1.CacheServiceClientJSON(client);
+    return new cache_twirp_client_1.CacheServiceClientJSON(client);
 }
 exports.internalCacheTwirpClient = internalCacheTwirpClient;
 //# sourceMappingURL=cacheTwirpClient.js.map
@@ -3565,6 +2443,87 @@ function getUserAgentString() {
 }
 exports.getUserAgentString = getUserAgentString;
 //# sourceMappingURL=user-agent.js.map
+
+/***/ }),
+
+/***/ 7564:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.maskSecretUrls = exports.maskSigUrl = void 0;
+const core_1 = __nccwpck_require__(7484);
+/**
+ * Masks the `sig` parameter in a URL and sets it as a secret.
+ *
+ * @param url - The URL containing the signature parameter to mask
+ * @remarks
+ * This function attempts to parse the provided URL and identify the 'sig' query parameter.
+ * If found, it registers both the raw and URL-encoded signature values as secrets using
+ * the Actions `setSecret` API, which prevents them from being displayed in logs.
+ *
+ * The function handles errors gracefully if URL parsing fails, logging them as debug messages.
+ *
+ * @example
+ * ```typescript
+ * // Mask a signature in an Azure SAS token URL
+ * maskSigUrl('https://example.blob.core.windows.net/container/file.txt?sig=abc123&se=2023-01-01');
+ * ```
+ */
+function maskSigUrl(url) {
+    if (!url)
+        return;
+    try {
+        const parsedUrl = new URL(url);
+        const signature = parsedUrl.searchParams.get('sig');
+        if (signature) {
+            (0, core_1.setSecret)(signature);
+            (0, core_1.setSecret)(encodeURIComponent(signature));
+        }
+    }
+    catch (error) {
+        (0, core_1.debug)(`Failed to parse URL: ${url} ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+exports.maskSigUrl = maskSigUrl;
+/**
+ * Masks sensitive information in URLs containing signature parameters.
+ * Currently supports masking 'sig' parameters in the 'signed_upload_url'
+ * and 'signed_download_url' properties of the provided object.
+ *
+ * @param body - The object should contain a signature
+ * @remarks
+ * This function extracts URLs from the object properties and calls maskSigUrl
+ * on each one to redact sensitive signature information. The function doesn't
+ * modify the original object; it only marks the signatures as secrets for
+ * logging purposes.
+ *
+ * @example
+ * ```typescript
+ * const responseBody = {
+ *   signed_upload_url: 'https://blob.core.windows.net/?sig=abc123',
+ *   signed_download_url: 'https://blob.core/windows.net/?sig=def456'
+ * };
+ * maskSecretUrls(responseBody);
+ * ```
+ */
+function maskSecretUrls(body) {
+    if (typeof body !== 'object' || body === null) {
+        (0, core_1.debug)('body is not an object or is null');
+        return;
+    }
+    if ('signed_upload_url' in body &&
+        typeof body.signed_upload_url === 'string') {
+        maskSigUrl(body.signed_upload_url);
+    }
+    if ('signed_download_url' in body &&
+        typeof body.signed_download_url === 'string') {
+        maskSigUrl(body.signed_download_url);
+    }
+}
+exports.maskSecretUrls = maskSecretUrls;
+//# sourceMappingURL=util.js.map
 
 /***/ }),
 
@@ -7676,6 +6635,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -46234,11 +45194,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
+var index_exports = {};
+__export(index_exports, {
   Octokit: () => Octokit
 });
-module.exports = __toCommonJS(dist_src_exports);
+module.exports = __toCommonJS(index_exports);
 var import_universal_user_agent = __nccwpck_require__(3843);
 var import_before_after_hook = __nccwpck_require__(2732);
 var import_request = __nccwpck_require__(8636);
@@ -46246,9 +45206,14 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.0.1";
+var VERSION = "5.2.1";
 
 // pkg/dist-src/index.js
+var noop = () => {
+};
+var consoleWarn = console.warn.bind(console);
+var consoleError = console.error.bind(console);
+var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
 var Octokit = class {
   static {
     this.VERSION = VERSION;
@@ -46309,10 +45274,7 @@ var Octokit = class {
         format: ""
       }
     };
-    requestDefaults.headers["user-agent"] = [
-      options.userAgent,
-      `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
-    ].filter(Boolean).join(" ");
+    requestDefaults.headers["user-agent"] = options.userAgent ? `${options.userAgent} ${userAgentTrail}` : userAgentTrail;
     if (options.baseUrl) {
       requestDefaults.baseUrl = options.baseUrl;
     }
@@ -46326,12 +45288,10 @@ var Octokit = class {
     this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
     this.log = Object.assign(
       {
-        debug: () => {
-        },
-        info: () => {
-        },
-        warn: console.warn.bind(console),
-        error: console.error.bind(console)
+        debug: noop,
+        info: noop,
+        warn: consoleWarn,
+        error: consoleError
       },
       options.log
     );
@@ -46368,9 +45328,9 @@ var Octokit = class {
       this.auth = auth;
     }
     const classConstructor = this.constructor;
-    classConstructor.plugins.forEach((plugin) => {
-      Object.assign(this, plugin(this, options));
-    });
+    for (let i = 0; i < classConstructor.plugins.length; ++i) {
+      Object.assign(this, classConstructor.plugins[i](this, options));
+    }
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
@@ -46413,7 +45373,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "9.0.2";
+var VERSION = "9.0.6";
 
 // pkg/dist-src/defaults.js
 var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
@@ -46440,12 +45400,24 @@ function lowercaseKeys(object) {
   }, {});
 }
 
+// pkg/dist-src/util/is-plain-object.js
+function isPlainObject(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
+
 // pkg/dist-src/util/merge-deep.js
-var import_is_plain_object = __nccwpck_require__(3407);
 function mergeDeep(defaults, options) {
   const result = Object.assign({}, defaults);
   Object.keys(options).forEach((key) => {
-    if ((0, import_is_plain_object.isPlainObject)(options[key])) {
+    if (isPlainObject(options[key])) {
       if (!(key in defaults))
         Object.assign(result, { [key]: options[key] });
       else
@@ -46506,9 +45478,9 @@ function addQueryParameters(url, parameters) {
 }
 
 // pkg/dist-src/util/extract-url-variable-names.js
-var urlVariableRegex = /\{[^}]+\}/g;
+var urlVariableRegex = /\{[^{}}]+\}/g;
 function removeNonChars(variableName) {
-  return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
+  return variableName.replace(/(?:^\W+)|(?:(?<!\W)\W+$)/g, "").split(/,/);
 }
 function extractUrlVariableNames(url) {
   const matches = url.match(urlVariableRegex);
@@ -46520,10 +45492,13 @@ function extractUrlVariableNames(url) {
 
 // pkg/dist-src/util/omit.js
 function omit(object, keysToOmit) {
-  return Object.keys(object).filter((option) => !keysToOmit.includes(option)).reduce((obj, key) => {
-    obj[key] = object[key];
-    return obj;
-  }, {});
+  const result = { __proto__: null };
+  for (const key of Object.keys(object)) {
+    if (keysToOmit.indexOf(key) === -1) {
+      result[key] = object[key];
+    }
+  }
+  return result;
 }
 
 // pkg/dist-src/util/url-template.js
@@ -46691,7 +45666,7 @@ function parse(options) {
     }
     if (url.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
-        const previewsFromAcceptHeader = headers.accept.match(/[\w-]+(?=-preview)/g) || [];
+        const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
         headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
           const format = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
           return `application/vnd.github.${preview}-preview${format}`;
@@ -46772,18 +45747,18 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
+var index_exports = {};
+__export(index_exports, {
   GraphqlResponseError: () => GraphqlResponseError,
   graphql: () => graphql2,
   withCustomRequest: () => withCustomRequest
 });
-module.exports = __toCommonJS(dist_src_exports);
+module.exports = __toCommonJS(index_exports);
 var import_request3 = __nccwpck_require__(8636);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "7.0.2";
+var VERSION = "7.1.1";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(8636);
@@ -46831,8 +45806,7 @@ function graphql(request2, query, options) {
       );
     }
     for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
-        continue;
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
       return Promise.reject(
         new Error(
           `[@octokit/graphql] "${key}" cannot be used as variable name`
@@ -46940,7 +45914,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.1.4";
+var VERSION = "9.2.2";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -46988,7 +45962,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^>]+)>;\s*rel="next"/
+            /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
@@ -47101,6 +46075,8 @@ var paginatingEndpoints = [
   "GET /orgs/{org}/members/{username}/codespaces",
   "GET /orgs/{org}/migrations",
   "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
   "GET /orgs/{org}/outside_collaborators",
   "GET /orgs/{org}/packages",
   "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
@@ -47337,7 +46313,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "10.1.5";
+var VERSION = "10.4.1";
 
 // pkg/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -47464,6 +46440,9 @@ var Endpoints = {
       "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
     ],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     getEnvironmentPublicKey: [
       "GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"
     ],
@@ -47616,6 +46595,9 @@ var Endpoints = {
     setCustomLabelsForSelfHostedRunnerForRepo: [
       "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
     ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     setGithubActionsDefaultWorkflowPermissionsOrganization: [
       "PUT /orgs/{org}/actions/permissions/workflow"
     ],
@@ -47685,6 +46667,7 @@ var Endpoints = {
     listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
     markNotificationsAsRead: ["PUT /notifications"],
     markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
     markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
     setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
     setThreadSubscription: [
@@ -47961,10 +46944,10 @@ var Endpoints = {
     updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
   },
   copilot: {
-    addCopilotForBusinessSeatsForTeams: [
+    addCopilotSeatsForTeams: [
       "POST /orgs/{org}/copilot/billing/selected_teams"
     ],
-    addCopilotForBusinessSeatsForUsers: [
+    addCopilotSeatsForUsers: [
       "POST /orgs/{org}/copilot/billing/selected_users"
     ],
     cancelCopilotSeatAssignmentForTeams: [
@@ -48277,9 +47260,23 @@ var Endpoints = {
       }
     ]
   },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
   orgs: {
     addSecurityManagerTeam: [
       "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
     cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
@@ -48289,6 +47286,7 @@ var Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
@@ -48299,6 +47297,9 @@ var Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}"
@@ -48310,6 +47311,7 @@ var Endpoints = {
     ],
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -48325,6 +47327,12 @@ var Endpoints = {
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPatGrantRepositories: [
       "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
@@ -48339,6 +47347,9 @@ var Endpoints = {
     listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
     listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
     redeliverWebhookDelivery: [
       "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
@@ -48362,6 +47373,18 @@ var Endpoints = {
     ],
     reviewPatGrantRequestsInBulk: [
       "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: [
@@ -48653,6 +47676,9 @@ var Endpoints = {
       {},
       { mapToData: "users" }
     ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
     checkAutomatedSecurityFixes: [
       "GET /repos/{owner}/{repo}/automated-security-fixes"
     ],
@@ -48688,12 +47714,15 @@ var Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
     createOrUpdateEnvironment: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}"
     ],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployment"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
     createRelease: ["POST /repos/{owner}/{repo}/releases"],
     createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
@@ -48846,6 +47875,9 @@ var Endpoints = {
     getOrgRulesets: ["GET /orgs/{org}/rulesets"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
     getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
     getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
     getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
     getPullRequestReviewProtection: [
@@ -49056,6 +48088,9 @@ var Endpoints = {
     ]
   },
   securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
     createPrivateVulnerabilityReport: [
       "POST /repos/{owner}/{repo}/security-advisories/reports"
     ],
@@ -49479,7 +48514,7 @@ var RequestError = class extends Error {
     if (options.request.headers.authorization) {
       requestCopy.headers = Object.assign({}, options.request.headers, {
         authorization: options.request.headers.authorization.replace(
-          / .*$/,
+          /(?<! ) .*$/,
           " [REDACTED]"
         )
       });
@@ -49547,10 +48582,22 @@ var import_endpoint = __nccwpck_require__(4471);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "8.1.5";
+var VERSION = "8.4.1";
+
+// pkg/dist-src/is-plain-object.js
+function isPlainObject(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
 
 // pkg/dist-src/fetch-wrapper.js
-var import_is_plain_object = __nccwpck_require__(3407);
 var import_request_error = __nccwpck_require__(3708);
 
 // pkg/dist-src/get-buffer-response.js
@@ -49560,10 +48607,10 @@ function getBufferResponse(response) {
 
 // pkg/dist-src/fetch-wrapper.js
 function fetchWrapper(requestOptions) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
   const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
-  if ((0, import_is_plain_object.isPlainObject)(requestOptions.body) || Array.isArray(requestOptions.body)) {
+  if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
     requestOptions.body = JSON.stringify(requestOptions.body);
   }
   let headers = {};
@@ -49581,8 +48628,9 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
     headers: requestOptions.headers,
-    signal: (_c = requestOptions.request) == null ? void 0 : _c.signal,
+    signal: (_d = requestOptions.request) == null ? void 0 : _d.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
     // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
     ...requestOptions.body && { duplex: "half" }
@@ -49593,7 +48641,7 @@ function fetchWrapper(requestOptions) {
       headers[keyAndValue[0]] = keyAndValue[1];
     }
     if ("deprecation" in headers) {
-      const matches = headers.link && headers.link.match(/<([^>]+)>; rel="deprecation"/);
+      const matches = headers.link && headers.link.match(/<([^<>]+)>; rel="deprecation"/);
       const deprecationLink = matches && matches.pop();
       log.warn(
         `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${headers.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
@@ -49679,11 +48727,17 @@ async function getResponseData(response) {
 function toErrorMessage(data) {
   if (typeof data === "string")
     return data;
+  let suffix;
+  if ("documentation_url" in data) {
+    suffix = ` - ${data.documentation_url}`;
+  } else {
+    suffix = "";
+  }
   if ("message" in data) {
     if (Array.isArray(data.errors)) {
-      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}`;
+      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}${suffix}`;
     }
-    return data.message;
+    return `${data.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -52975,6 +52029,10 @@ class RpcOutputStreamController {
             cmp: [],
         };
         this._closed = false;
+        // --- RpcOutputStream async iterator API
+        // iterator state.
+        // is undefined when no iterator has been acquired yet.
+        this._itState = { q: [] };
     }
     // --- RpcOutputStream callback API
     onNext(callback) {
@@ -53074,10 +52132,6 @@ class RpcOutputStreamController {
      *   messages are queued.
      */
     [Symbol.asyncIterator]() {
-        // init the iterator state, enabling pushIt()
-        if (!this._itState) {
-            this._itState = { q: [] };
-        }
         // if we are closed, we are definitely not receiving any more messages.
         // but we can't let the iterator get stuck. we want to either:
         // a) finish the new iterator immediately, because we are completed
@@ -53110,8 +52164,6 @@ class RpcOutputStreamController {
     // this either resolves a pending promise, or enqueues the result.
     pushIt(result) {
         let state = this._itState;
-        if (!state)
-            return;
         // is the consumer waiting for us?
         if (state.p) {
             // yes, consumer is waiting for this promise.
@@ -56550,12 +55602,16 @@ class ReflectionJsonReader {
                         target[localName] = field.T().internalJsonRead(jsonValue, options, target[localName]);
                         break;
                     case "enum":
+                        if (jsonValue === null)
+                            continue;
                         let val = this.enum(field.T(), jsonValue, field.name, options.ignoreUnknownFields);
                         if (val === false)
                             continue;
                         target[localName] = val;
                         break;
                     case "scalar":
+                        if (jsonValue === null)
+                            continue;
                         target[localName] = this.scalar(jsonValue, field.T, field.L, field.name);
                         break;
                 }
@@ -58641,645 +57697,6 @@ class Deprecation extends Error {
 }
 
 exports.Deprecation = Deprecation;
-
-
-/***/ }),
-
-/***/ 5129:
-/***/ ((module) => {
-
-"use strict";
-
-
-function _process (v, mod) {
-  var i
-  var r
-
-  if (typeof mod === 'function') {
-    r = mod(v)
-    if (r !== undefined) {
-      v = r
-    }
-  } else if (Array.isArray(mod)) {
-    for (i = 0; i < mod.length; i++) {
-      r = mod[i](v)
-      if (r !== undefined) {
-        v = r
-      }
-    }
-  }
-
-  return v
-}
-
-function parseKey (key, val) {
-  // detect negative index notation
-  if (key[0] === '-' && Array.isArray(val) && /^-\d+$/.test(key)) {
-    return val.length + parseInt(key, 10)
-  }
-  return key
-}
-
-function isIndex (k) {
-  return /^\d+$/.test(k)
-}
-
-function isObject (val) {
-  return Object.prototype.toString.call(val) === '[object Object]'
-}
-
-function isArrayOrObject (val) {
-  return Object(val) === val
-}
-
-function isEmptyObject (val) {
-  return Object.keys(val).length === 0
-}
-
-var blacklist = ['__proto__', 'prototype', 'constructor']
-var blacklistFilter = function (part) { return blacklist.indexOf(part) === -1 }
-
-function parsePath (path, sep) {
-  if (path.indexOf('[') >= 0) {
-    path = path.replace(/\[/g, sep).replace(/]/g, '')
-  }
-
-  var parts = path.split(sep)
-
-  var check = parts.filter(blacklistFilter)
-
-  if (check.length !== parts.length) {
-    throw Error('Refusing to update blacklisted property ' + path)
-  }
-
-  return parts
-}
-
-var hasOwnProperty = Object.prototype.hasOwnProperty
-
-function DotObject (separator, override, useArray, useBrackets) {
-  if (!(this instanceof DotObject)) {
-    return new DotObject(separator, override, useArray, useBrackets)
-  }
-
-  if (typeof override === 'undefined') override = false
-  if (typeof useArray === 'undefined') useArray = true
-  if (typeof useBrackets === 'undefined') useBrackets = true
-  this.separator = separator || '.'
-  this.override = override
-  this.useArray = useArray
-  this.useBrackets = useBrackets
-  this.keepArray = false
-
-  // contains touched arrays
-  this.cleanup = []
-}
-
-var dotDefault = new DotObject('.', false, true, true)
-function wrap (method) {
-  return function () {
-    return dotDefault[method].apply(dotDefault, arguments)
-  }
-}
-
-DotObject.prototype._fill = function (a, obj, v, mod) {
-  var k = a.shift()
-
-  if (a.length > 0) {
-    obj[k] = obj[k] || (this.useArray && isIndex(a[0]) ? [] : {})
-
-    if (!isArrayOrObject(obj[k])) {
-      if (this.override) {
-        obj[k] = {}
-      } else {
-        if (!(isArrayOrObject(v) && isEmptyObject(v))) {
-          throw new Error(
-            'Trying to redefine `' + k + '` which is a ' + typeof obj[k]
-          )
-        }
-
-        return
-      }
-    }
-
-    this._fill(a, obj[k], v, mod)
-  } else {
-    if (!this.override && isArrayOrObject(obj[k]) && !isEmptyObject(obj[k])) {
-      if (!(isArrayOrObject(v) && isEmptyObject(v))) {
-        throw new Error("Trying to redefine non-empty obj['" + k + "']")
-      }
-
-      return
-    }
-
-    obj[k] = _process(v, mod)
-  }
-}
-
-/**
- *
- * Converts an object with dotted-key/value pairs to it's expanded version
- *
- * Optionally transformed by a set of modifiers.
- *
- * Usage:
- *
- *   var row = {
- *     'nr': 200,
- *     'doc.name': '  My Document  '
- *   }
- *
- *   var mods = {
- *     'doc.name': [_s.trim, _s.underscored]
- *   }
- *
- *   dot.object(row, mods)
- *
- * @param {Object} obj
- * @param {Object} mods
- */
-DotObject.prototype.object = function (obj, mods) {
-  var self = this
-
-  Object.keys(obj).forEach(function (k) {
-    var mod = mods === undefined ? null : mods[k]
-    // normalize array notation.
-    var ok = parsePath(k, self.separator).join(self.separator)
-
-    if (ok.indexOf(self.separator) !== -1) {
-      self._fill(ok.split(self.separator), obj, obj[k], mod)
-      delete obj[k]
-    } else {
-      obj[k] = _process(obj[k], mod)
-    }
-  })
-
-  return obj
-}
-
-/**
- * @param {String} path dotted path
- * @param {String} v value to be set
- * @param {Object} obj object to be modified
- * @param {Function|Array} mod optional modifier
- */
-DotObject.prototype.str = function (path, v, obj, mod) {
-  var ok = parsePath(path, this.separator).join(this.separator)
-
-  if (path.indexOf(this.separator) !== -1) {
-    this._fill(ok.split(this.separator), obj, v, mod)
-  } else {
-    obj[path] = _process(v, mod)
-  }
-
-  return obj
-}
-
-/**
- *
- * Pick a value from an object using dot notation.
- *
- * Optionally remove the value
- *
- * @param {String} path
- * @param {Object} obj
- * @param {Boolean} remove
- */
-DotObject.prototype.pick = function (path, obj, remove, reindexArray) {
-  var i
-  var keys
-  var val
-  var key
-  var cp
-
-  keys = parsePath(path, this.separator)
-  for (i = 0; i < keys.length; i++) {
-    key = parseKey(keys[i], obj)
-    if (obj && typeof obj === 'object' && key in obj) {
-      if (i === keys.length - 1) {
-        if (remove) {
-          val = obj[key]
-          if (reindexArray && Array.isArray(obj)) {
-            obj.splice(key, 1)
-          } else {
-            delete obj[key]
-          }
-          if (Array.isArray(obj)) {
-            cp = keys.slice(0, -1).join('.')
-            if (this.cleanup.indexOf(cp) === -1) {
-              this.cleanup.push(cp)
-            }
-          }
-          return val
-        } else {
-          return obj[key]
-        }
-      } else {
-        obj = obj[key]
-      }
-    } else {
-      return undefined
-    }
-  }
-  if (remove && Array.isArray(obj)) {
-    obj = obj.filter(function (n) {
-      return n !== undefined
-    })
-  }
-  return obj
-}
-/**
- *
- * Delete value from an object using dot notation.
- *
- * @param {String} path
- * @param {Object} obj
- * @return {any} The removed value
- */
-DotObject.prototype.delete = function (path, obj) {
-  return this.remove(path, obj, true)
-}
-
-/**
- *
- * Remove value from an object using dot notation.
- *
- * Will remove multiple items if path is an array.
- * In this case array indexes will be retained until all
- * removals have been processed.
- *
- * Use dot.delete() to automatically  re-index arrays.
- *
- * @param {String|Array<String>} path
- * @param {Object} obj
- * @param {Boolean} reindexArray
- * @return {any} The removed value
- */
-DotObject.prototype.remove = function (path, obj, reindexArray) {
-  var i
-
-  this.cleanup = []
-  if (Array.isArray(path)) {
-    for (i = 0; i < path.length; i++) {
-      this.pick(path[i], obj, true, reindexArray)
-    }
-    if (!reindexArray) {
-      this._cleanup(obj)
-    }
-    return obj
-  } else {
-    return this.pick(path, obj, true, reindexArray)
-  }
-}
-
-DotObject.prototype._cleanup = function (obj) {
-  var ret
-  var i
-  var keys
-  var root
-  if (this.cleanup.length) {
-    for (i = 0; i < this.cleanup.length; i++) {
-      keys = this.cleanup[i].split('.')
-      root = keys.splice(0, -1).join('.')
-      ret = root ? this.pick(root, obj) : obj
-      ret = ret[keys[0]].filter(function (v) {
-        return v !== undefined
-      })
-      this.set(this.cleanup[i], ret, obj)
-    }
-    this.cleanup = []
-  }
-}
-
-/**
- * Alias method  for `dot.remove`
- *
- * Note: this is not an alias for dot.delete()
- *
- * @param {String|Array<String>} path
- * @param {Object} obj
- * @param {Boolean} reindexArray
- * @return {any} The removed value
- */
-DotObject.prototype.del = DotObject.prototype.remove
-
-/**
- *
- * Move a property from one place to the other.
- *
- * If the source path does not exist (undefined)
- * the target property will not be set.
- *
- * @param {String} source
- * @param {String} target
- * @param {Object} obj
- * @param {Function|Array} mods
- * @param {Boolean} merge
- */
-DotObject.prototype.move = function (source, target, obj, mods, merge) {
-  if (typeof mods === 'function' || Array.isArray(mods)) {
-    this.set(target, _process(this.pick(source, obj, true), mods), obj, merge)
-  } else {
-    merge = mods
-    this.set(target, this.pick(source, obj, true), obj, merge)
-  }
-
-  return obj
-}
-
-/**
- *
- * Transfer a property from one object to another object.
- *
- * If the source path does not exist (undefined)
- * the property on the other object will not be set.
- *
- * @param {String} source
- * @param {String} target
- * @param {Object} obj1
- * @param {Object} obj2
- * @param {Function|Array} mods
- * @param {Boolean} merge
- */
-DotObject.prototype.transfer = function (
-  source,
-  target,
-  obj1,
-  obj2,
-  mods,
-  merge
-) {
-  if (typeof mods === 'function' || Array.isArray(mods)) {
-    this.set(
-      target,
-      _process(this.pick(source, obj1, true), mods),
-      obj2,
-      merge
-    )
-  } else {
-    merge = mods
-    this.set(target, this.pick(source, obj1, true), obj2, merge)
-  }
-
-  return obj2
-}
-
-/**
- *
- * Copy a property from one object to another object.
- *
- * If the source path does not exist (undefined)
- * the property on the other object will not be set.
- *
- * @param {String} source
- * @param {String} target
- * @param {Object} obj1
- * @param {Object} obj2
- * @param {Function|Array} mods
- * @param {Boolean} merge
- */
-DotObject.prototype.copy = function (source, target, obj1, obj2, mods, merge) {
-  if (typeof mods === 'function' || Array.isArray(mods)) {
-    this.set(
-      target,
-      _process(
-        // clone what is picked
-        JSON.parse(JSON.stringify(this.pick(source, obj1, false))),
-        mods
-      ),
-      obj2,
-      merge
-    )
-  } else {
-    merge = mods
-    this.set(target, this.pick(source, obj1, false), obj2, merge)
-  }
-
-  return obj2
-}
-
-/**
- *
- * Set a property on an object using dot notation.
- *
- * @param {String} path
- * @param {any} val
- * @param {Object} obj
- * @param {Boolean} merge
- */
-DotObject.prototype.set = function (path, val, obj, merge) {
-  var i
-  var k
-  var keys
-  var key
-
-  // Do not operate if the value is undefined.
-  if (typeof val === 'undefined') {
-    return obj
-  }
-  keys = parsePath(path, this.separator)
-
-  for (i = 0; i < keys.length; i++) {
-    key = keys[i]
-    if (i === keys.length - 1) {
-      if (merge && isObject(val) && isObject(obj[key])) {
-        for (k in val) {
-          if (hasOwnProperty.call(val, k)) {
-            obj[key][k] = val[k]
-          }
-        }
-      } else if (merge && Array.isArray(obj[key]) && Array.isArray(val)) {
-        for (var j = 0; j < val.length; j++) {
-          obj[keys[i]].push(val[j])
-        }
-      } else {
-        obj[key] = val
-      }
-    } else if (
-      // force the value to be an object
-      !hasOwnProperty.call(obj, key) ||
-      (!isObject(obj[key]) && !Array.isArray(obj[key]))
-    ) {
-      // initialize as array if next key is numeric
-      if (/^\d+$/.test(keys[i + 1])) {
-        obj[key] = []
-      } else {
-        obj[key] = {}
-      }
-    }
-    obj = obj[key]
-  }
-  return obj
-}
-
-/**
- *
- * Transform an object
- *
- * Usage:
- *
- *   var obj = {
- *     "id": 1,
- *    "some": {
- *      "thing": "else"
- *    }
- *   }
- *
- *   var transform = {
- *     "id": "nr",
- *    "some.thing": "name"
- *   }
- *
- *   var tgt = dot.transform(transform, obj)
- *
- * @param {Object} recipe Transform recipe
- * @param {Object} obj Object to be transformed
- * @param {Array} mods modifiers for the target
- */
-DotObject.prototype.transform = function (recipe, obj, tgt) {
-  obj = obj || {}
-  tgt = tgt || {}
-  Object.keys(recipe).forEach(
-    function (key) {
-      this.set(recipe[key], this.pick(key, obj), tgt)
-    }.bind(this)
-  )
-  return tgt
-}
-
-/**
- *
- * Convert object to dotted-key/value pair
- *
- * Usage:
- *
- *   var tgt = dot.dot(obj)
- *
- *   or
- *
- *   var tgt = {}
- *   dot.dot(obj, tgt)
- *
- * @param {Object} obj source object
- * @param {Object} tgt target object
- * @param {Array} path path array (internal)
- */
-DotObject.prototype.dot = function (obj, tgt, path) {
-  tgt = tgt || {}
-  path = path || []
-  var isArray = Array.isArray(obj)
-
-  Object.keys(obj).forEach(
-    function (key) {
-      var index = isArray && this.useBrackets ? '[' + key + ']' : key
-      if (
-        isArrayOrObject(obj[key]) &&
-        ((isObject(obj[key]) && !isEmptyObject(obj[key])) ||
-          (Array.isArray(obj[key]) && !this.keepArray && obj[key].length !== 0))
-      ) {
-        if (isArray && this.useBrackets) {
-          var previousKey = path[path.length - 1] || ''
-          return this.dot(
-            obj[key],
-            tgt,
-            path.slice(0, -1).concat(previousKey + index)
-          )
-        } else {
-          return this.dot(obj[key], tgt, path.concat(index))
-        }
-      } else {
-        if (isArray && this.useBrackets) {
-          tgt[path.join(this.separator).concat('[' + key + ']')] = obj[key]
-        } else {
-          tgt[path.concat(index).join(this.separator)] = obj[key]
-        }
-      }
-    }.bind(this)
-  )
-  return tgt
-}
-
-DotObject.pick = wrap('pick')
-DotObject.move = wrap('move')
-DotObject.transfer = wrap('transfer')
-DotObject.transform = wrap('transform')
-DotObject.copy = wrap('copy')
-DotObject.object = wrap('object')
-DotObject.str = wrap('str')
-DotObject.set = wrap('set')
-DotObject.delete = wrap('delete')
-DotObject.del = DotObject.remove = wrap('remove')
-DotObject.dot = wrap('dot');
-['override', 'overwrite'].forEach(function (prop) {
-  Object.defineProperty(DotObject, prop, {
-    get: function () {
-      return dotDefault.override
-    },
-    set: function (val) {
-      dotDefault.override = !!val
-    }
-  })
-});
-['useArray', 'keepArray', 'useBrackets'].forEach(function (prop) {
-  Object.defineProperty(DotObject, prop, {
-    get: function () {
-      return dotDefault[prop]
-    },
-    set: function (val) {
-      dotDefault[prop] = val
-    }
-  })
-})
-
-DotObject._process = _process
-
-module.exports = DotObject
-
-
-/***/ }),
-
-/***/ 3407:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-/*!
- * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
- *
- * Copyright (c) 2014-2017, Jon Schlinkert.
- * Released under the MIT License.
- */
-
-function isObject(o) {
-  return Object.prototype.toString.call(o) === '[object Object]';
-}
-
-function isPlainObject(o) {
-  var ctor,prot;
-
-  if (isObject(o) === false) return false;
-
-  // If has modified constructor
-  ctor = o.constructor;
-  if (ctor === undefined) return true;
-
-  // If has modified prototype
-  prot = ctor.prototype;
-  if (isObject(prot) === false) return false;
-
-  // If constructor does not have an Object-specific method
-  if (prot.hasOwnProperty('isPrototypeOf') === false) {
-    return false;
-  }
-
-  // Most likely a plain Object
-  return true;
-}
-
-exports.isPlainObject = isPlainObject;
 
 
 /***/ }),
@@ -67336,1152 +65753,6 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 5497:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-
-/***/ }),
-
-/***/ 3315:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isValidErrorCode = exports.httpStatusFromErrorCode = exports.TwirpErrorCode = exports.BadRouteError = exports.InternalServerErrorWith = exports.InternalServerError = exports.RequiredArgumentError = exports.InvalidArgumentError = exports.NotFoundError = exports.TwirpError = void 0;
-/**
- * Represents a twirp error
- */
-class TwirpError extends Error {
-    constructor(code, msg) {
-        super(msg);
-        this.code = TwirpErrorCode.Internal;
-        this.meta = {};
-        this.code = code;
-        this.msg = msg;
-        Object.setPrototypeOf(this, TwirpError.prototype);
-    }
-    /**
-     * Adds a metadata kv to the error
-     * @param key
-     * @param value
-     */
-    withMeta(key, value) {
-        this.meta[key] = value;
-        return this;
-    }
-    /**
-     * Returns a single metadata value
-     * return "" if not found
-     * @param key
-     */
-    getMeta(key) {
-        return this.meta[key] || "";
-    }
-    /**
-     * Add the original error cause
-     * @param err
-     * @param addMeta
-     */
-    withCause(err, addMeta = false) {
-        this._originalCause = err;
-        if (addMeta) {
-            this.withMeta("cause", err.message);
-        }
-        return this;
-    }
-    cause() {
-        return this._originalCause;
-    }
-    /**
-     * Returns the error representation to JSON
-     */
-    toJSON() {
-        try {
-            return JSON.stringify({
-                code: this.code,
-                msg: this.msg,
-                meta: this.meta,
-            });
-        }
-        catch (e) {
-            return `{"code": "internal", "msg": "There was an error but it could not be serialized into JSON"}`;
-        }
-    }
-    /**
-     * Create a twirp error from an object
-     * @param obj
-     */
-    static fromObject(obj) {
-        const code = obj["code"] || TwirpErrorCode.Unknown;
-        const msg = obj["msg"] || "unknown";
-        const error = new TwirpError(code, msg);
-        if (obj["meta"]) {
-            Object.keys(obj["meta"]).forEach((key) => {
-                error.withMeta(key, obj["meta"][key]);
-            });
-        }
-        return error;
-    }
-}
-exports.TwirpError = TwirpError;
-/**
- * NotFoundError constructor for the common NotFound error.
- */
-class NotFoundError extends TwirpError {
-    constructor(msg) {
-        super(TwirpErrorCode.NotFound, msg);
-    }
-}
-exports.NotFoundError = NotFoundError;
-/**
- * InvalidArgumentError constructor for the common InvalidArgument error. Can be
- * used when an argument has invalid format, is a number out of range, is a bad
- * option, etc).
- */
-class InvalidArgumentError extends TwirpError {
-    constructor(argument, validationMsg) {
-        super(TwirpErrorCode.InvalidArgument, argument + " " + validationMsg);
-        this.withMeta("argument", argument);
-    }
-}
-exports.InvalidArgumentError = InvalidArgumentError;
-/**
- * RequiredArgumentError is a more specific constructor for InvalidArgument
- * error. Should be used when the argument is required (expected to have a
- * non-zero value).
- */
-class RequiredArgumentError extends InvalidArgumentError {
-    constructor(argument) {
-        super(argument, "is required");
-    }
-}
-exports.RequiredArgumentError = RequiredArgumentError;
-/**
- * InternalError constructor for the common Internal error. Should be used to
- * specify that something bad or unexpected happened.
- */
-class InternalServerError extends TwirpError {
-    constructor(msg) {
-        super(TwirpErrorCode.Internal, msg);
-    }
-}
-exports.InternalServerError = InternalServerError;
-/**
- * InternalErrorWith makes an internal error, wrapping the original error and using it
- * for the error message, and with metadata "cause" with the original error type.
- * This function is used by Twirp services to wrap non-Twirp errors as internal errors.
- * The wrapped error can be extracted later with err.cause()
- */
-class InternalServerErrorWith extends InternalServerError {
-    constructor(err) {
-        super(err.message);
-        this.withMeta("cause", err.name);
-        this.withCause(err);
-    }
-}
-exports.InternalServerErrorWith = InternalServerErrorWith;
-/**
- * A standard BadRoute Error
- */
-class BadRouteError extends TwirpError {
-    constructor(msg, method, url) {
-        super(TwirpErrorCode.BadRoute, msg);
-        this.withMeta("twirp_invalid_route", method + " " + url);
-    }
-}
-exports.BadRouteError = BadRouteError;
-var TwirpErrorCode;
-(function (TwirpErrorCode) {
-    // Canceled indicates the operation was cancelled (typically by the caller).
-    TwirpErrorCode["Canceled"] = "canceled";
-    // Unknown error. For example when handling errors raised by APIs that do not
-    // return enough error information.
-    TwirpErrorCode["Unknown"] = "unknown";
-    // InvalidArgument indicates client specified an invalid argument. It
-    // indicates arguments that are problematic regardless of the state of the
-    // system (i.e. a malformed file name, required argument, number out of range,
-    // etc.).
-    TwirpErrorCode["InvalidArgument"] = "invalid_argument";
-    // Malformed indicates an error occurred while decoding the client's request.
-    // This may mean that the message was encoded improperly, or that there is a
-    // disagreement in message format between the client and server.
-    TwirpErrorCode["Malformed"] = "malformed";
-    // DeadlineExceeded means operation expired before completion. For operations
-    // that change the state of the system, this error may be returned even if the
-    // operation has completed successfully (timeout).
-    TwirpErrorCode["DeadlineExceeded"] = "deadline_exceeded";
-    // NotFound means some requested entity was not found.
-    TwirpErrorCode["NotFound"] = "not_found";
-    // BadRoute means that the requested URL path wasn't routable to a Twirp
-    // service and method. This is returned by the generated server, and usually
-    // shouldn't be returned by applications. Instead, applications should use
-    // NotFound or Unimplemented.
-    TwirpErrorCode["BadRoute"] = "bad_route";
-    // AlreadyExists means an attempt to create an entity failed because one
-    // already exists.
-    TwirpErrorCode["AlreadyExists"] = "already_exists";
-    // PermissionDenied indicates the caller does not have permission to execute
-    // the specified operation. It must not be used if the caller cannot be
-    // identified (Unauthenticated).
-    TwirpErrorCode["PermissionDenied"] = "permission_denied";
-    // Unauthenticated indicates the request does not have valid authentication
-    // credentials for the operation.
-    TwirpErrorCode["Unauthenticated"] = "unauthenticated";
-    // ResourceExhausted indicates some resource has been exhausted, perhaps a
-    // per-user quota, or perhaps the entire file system is out of space.
-    TwirpErrorCode["ResourceExhausted"] = "resource_exhausted";
-    // FailedPrecondition indicates operation was rejected because the system is
-    // not in a state required for the operation's execution. For example, doing
-    // an rmdir operation on a directory that is non-empty, or on a non-directory
-    // object, or when having conflicting read-modify-write on the same resource.
-    TwirpErrorCode["FailedPrecondition"] = "failed_precondition";
-    // Aborted indicates the operation was aborted, typically due to a concurrency
-    // issue like sequencer check failures, transaction aborts, etc.
-    TwirpErrorCode["Aborted"] = "aborted";
-    // OutOfRange means operation was attempted past the valid range. For example,
-    // seeking or reading past end of a paginated collection.
-    //
-    // Unlike InvalidArgument, this error indicates a problem that may be fixed if
-    // the system state changes (i.e. adding more items to the collection).
-    //
-    // There is a fair bit of overlap between FailedPrecondition and OutOfRange.
-    // We recommend using OutOfRange (the more specific error) when it applies so
-    // that callers who are iterating through a space can easily look for an
-    // OutOfRange error to detect when they are done.
-    TwirpErrorCode["OutOfRange"] = "out_of_range";
-    // Unimplemented indicates operation is not implemented or not
-    // supported/enabled in this service.
-    TwirpErrorCode["Unimplemented"] = "unimplemented";
-    // Internal errors. When some invariants expected by the underlying system
-    // have been broken. In other words, something bad happened in the library or
-    // backend service. Do not confuse with HTTP Internal Server Error; an
-    // Internal error could also happen on the client code, i.e. when parsing a
-    // server response.
-    TwirpErrorCode["Internal"] = "internal";
-    // Unavailable indicates the service is currently unavailable. This is a most
-    // likely a transient condition and may be corrected by retrying with a
-    // backoff.
-    TwirpErrorCode["Unavailable"] = "unavailable";
-    // DataLoss indicates unrecoverable data loss or corruption.
-    TwirpErrorCode["DataLoss"] = "data_loss";
-})(TwirpErrorCode = exports.TwirpErrorCode || (exports.TwirpErrorCode = {}));
-// ServerHTTPStatusFromErrorCode maps a Twirp error type into a similar HTTP
-// response status. It is used by the Twirp server handler to set the HTTP
-// response status code. Returns 0 if the ErrorCode is invalid.
-function httpStatusFromErrorCode(code) {
-    switch (code) {
-        case TwirpErrorCode.Canceled:
-            return 408; // RequestTimeout
-        case TwirpErrorCode.Unknown:
-            return 500; // Internal Server Error
-        case TwirpErrorCode.InvalidArgument:
-            return 400; // BadRequest
-        case TwirpErrorCode.Malformed:
-            return 400; // BadRequest
-        case TwirpErrorCode.DeadlineExceeded:
-            return 408; // RequestTimeout
-        case TwirpErrorCode.NotFound:
-            return 404; // Not Found
-        case TwirpErrorCode.BadRoute:
-            return 404; // Not Found
-        case TwirpErrorCode.AlreadyExists:
-            return 409; // Conflict
-        case TwirpErrorCode.PermissionDenied:
-            return 403; // Forbidden
-        case TwirpErrorCode.Unauthenticated:
-            return 401; // Unauthorized
-        case TwirpErrorCode.ResourceExhausted:
-            return 429; // Too Many Requests
-        case TwirpErrorCode.FailedPrecondition:
-            return 412; // Precondition Failed
-        case TwirpErrorCode.Aborted:
-            return 409; // Conflict
-        case TwirpErrorCode.OutOfRange:
-            return 400; // Bad Request
-        case TwirpErrorCode.Unimplemented:
-            return 501; // Not Implemented
-        case TwirpErrorCode.Internal:
-            return 500; // Internal Server Error
-        case TwirpErrorCode.Unavailable:
-            return 503; // Service Unavailable
-        case TwirpErrorCode.DataLoss:
-            return 500; // Internal Server Error
-        default:
-            return 0; // Invalid!
-    }
-}
-exports.httpStatusFromErrorCode = httpStatusFromErrorCode;
-// IsValidErrorCode returns true if is one of the valid predefined constants.
-function isValidErrorCode(code) {
-    return httpStatusFromErrorCode(code) != 0;
-}
-exports.isValidErrorCode = isValidErrorCode;
-
-
-/***/ }),
-
-/***/ 9636:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Gateway = exports.Pattern = void 0;
-const querystring_1 = __nccwpck_require__(3480);
-const dotObject = __importStar(__nccwpck_require__(5129));
-const request_1 = __nccwpck_require__(9647);
-const errors_1 = __nccwpck_require__(3315);
-const http_client_1 = __nccwpck_require__(5683);
-const server_1 = __nccwpck_require__(1035);
-var Pattern;
-(function (Pattern) {
-    Pattern["POST"] = "post";
-    Pattern["GET"] = "get";
-    Pattern["PATCH"] = "patch";
-    Pattern["PUT"] = "put";
-    Pattern["DELETE"] = "delete";
-})(Pattern = exports.Pattern || (exports.Pattern = {}));
-/**
- * The Gateway proxies http requests to Twirp Compliant
- * handlers
- */
-class Gateway {
-    constructor(routes) {
-        this.routes = routes;
-    }
-    /**
-     * Middleware that rewrite the current request
-     * to a Twirp compliant request
-     */
-    twirpRewrite(prefix = "/twirp") {
-        return (req, resp, next) => {
-            this.rewrite(req, resp, prefix)
-                .then(() => next())
-                .catch((e) => {
-                if (e instanceof errors_1.TwirpError) {
-                    if (e.code !== errors_1.TwirpErrorCode.NotFound) {
-                        server_1.writeError(resp, e);
-                    }
-                    else {
-                        next();
-                    }
-                }
-            });
-        };
-    }
-    /**
-     * Rewrite an incoming request to a Twirp compliant request
-     * @param req
-     * @param resp
-     * @param prefix
-     */
-    rewrite(req, resp, prefix = "/twirp") {
-        return __awaiter(this, void 0, void 0, function* () {
-            const [match, route] = this.matchRoute(req);
-            const body = yield this.prepareTwirpBody(req, match, route);
-            const twirpUrl = `${prefix}/${route.packageName}.${route.serviceName}/${route.methodName}`;
-            req.url = twirpUrl;
-            req.originalUrl = twirpUrl;
-            req.method = "POST";
-            req.headers["content-type"] = "application/json";
-            req.rawBody = Buffer.from(JSON.stringify(body));
-            if (route.responseBodyKey) {
-                const endFn = resp.end.bind(resp);
-                resp.end = function (chunk) {
-                    if (resp.statusCode === 200) {
-                        endFn(`{ "${route.responseBodyKey}": ${chunk} }`);
-                    }
-                    else {
-                        endFn(chunk);
-                    }
-                };
-            }
-        });
-    }
-    /**
-     * Create a reverse proxy handler to
-     * proxy http requests to Twirp Compliant handlers
-     * @param httpClientOption
-     */
-    reverseProxy(httpClientOption) {
-        const client = http_client_1.NodeHttpRPC(httpClientOption);
-        return (req, res) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const [match, route] = this.matchRoute(req);
-                const body = yield this.prepareTwirpBody(req, match, route);
-                const response = yield client.request(`${route.packageName}.${route.serviceName}`, route.methodName, "application/json", body);
-                res.statusCode = 200;
-                res.setHeader("content-type", "application/json");
-                let jsonResponse;
-                if (route.responseBodyKey) {
-                    jsonResponse = JSON.stringify({ [route.responseBodyKey]: response });
-                }
-                else {
-                    jsonResponse = JSON.stringify(response);
-                }
-                res.end(jsonResponse);
-            }
-            catch (e) {
-                server_1.writeError(res, e);
-            }
-        });
-    }
-    /**
-     * Prepares twirp body requests using http.google.annotions
-     * compliant spec
-     *
-     * @param req
-     * @param match
-     * @param route
-     * @protected
-     */
-    prepareTwirpBody(req, match, route) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const _a = match.params, { query_string } = _a, params = __rest(_a, ["query_string"]);
-            let requestBody = Object.assign({}, params);
-            if (query_string && route.bodyKey !== "*") {
-                const queryParams = this.parseQueryString(query_string);
-                requestBody = Object.assign(Object.assign({}, queryParams), requestBody);
-            }
-            let body = {};
-            if (route.bodyKey) {
-                const data = yield request_1.getRequestData(req);
-                try {
-                    const jsonBody = JSON.parse(data.toString() || "{}");
-                    if (route.bodyKey === "*") {
-                        body = jsonBody;
-                    }
-                    else {
-                        body[route.bodyKey] = jsonBody;
-                    }
-                }
-                catch (e) {
-                    const msg = "the json request could not be decoded";
-                    throw new errors_1.TwirpError(errors_1.TwirpErrorCode.Malformed, msg).withCause(e, true);
-                }
-            }
-            return Object.assign(Object.assign({}, body), requestBody);
-        });
-    }
-    /**
-     * Matches a route
-     * @param req
-     */
-    matchRoute(req) {
-        var _a;
-        const httpMethod = (_a = req.method) === null || _a === void 0 ? void 0 : _a.toLowerCase();
-        if (!httpMethod) {
-            throw new errors_1.BadRouteError(`method not allowed`, req.method || "", req.url || "");
-        }
-        const routes = this.routes[httpMethod];
-        for (const route of routes) {
-            const match = route.matcher(req.url || "/");
-            if (match) {
-                return [match, route];
-            }
-        }
-        throw new errors_1.NotFoundError(`url ${req.url} not found`);
-    }
-    /**
-     * Parse query string
-     * @param queryString
-     */
-    parseQueryString(queryString) {
-        const queryParams = querystring_1.parse(queryString.replace("?", ""));
-        return dotObject.object(queryParams);
-    }
-}
-exports.Gateway = Gateway;
-
-
-/***/ }),
-
-/***/ 3898:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isHook = exports.chainHooks = void 0;
-// ChainHooks creates a new ServerHook which chains the callbacks in
-// each of the constituent hooks passed in. Each hook function will be
-// called in the order of the ServerHooks values passed in.
-//
-// For the erroring hooks, RequestReceived and RequestRouted, any returned
-// errors prevent processing by later hooks.
-function chainHooks(...hooks) {
-    if (hooks.length === 0) {
-        return null;
-    }
-    if (hooks.length === 1) {
-        return hooks[0];
-    }
-    const serverHook = {
-        requestReceived(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.requestReceived) {
-                        continue;
-                    }
-                    yield hook.requestReceived(ctx);
-                }
-            });
-        },
-        requestPrepared(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.requestPrepared) {
-                        continue;
-                    }
-                    console.warn("hook requestPrepared is deprecated and will be removed in the next release. " +
-                        "Please use responsePrepared instead.");
-                    yield hook.requestPrepared(ctx);
-                }
-            });
-        },
-        responsePrepared(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.responsePrepared) {
-                        continue;
-                    }
-                    yield hook.responsePrepared(ctx);
-                }
-            });
-        },
-        requestSent(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.requestSent) {
-                        continue;
-                    }
-                    console.warn("hook requestSent is deprecated and will be removed in the next release. " +
-                        "Please use responseSent instead.");
-                    yield hook.requestSent(ctx);
-                }
-            });
-        },
-        responseSent(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.responseSent) {
-                        continue;
-                    }
-                    yield hook.responseSent(ctx);
-                }
-            });
-        },
-        requestRouted(ctx) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.requestRouted) {
-                        continue;
-                    }
-                    yield hook.requestRouted(ctx);
-                }
-            });
-        },
-        error(ctx, err) {
-            return __awaiter(this, void 0, void 0, function* () {
-                for (const hook of hooks) {
-                    if (!hook.error) {
-                        continue;
-                    }
-                    yield hook.error(ctx, err);
-                }
-            });
-        },
-    };
-    return serverHook;
-}
-exports.chainHooks = chainHooks;
-function isHook(object) {
-    return ("requestReceived" in object ||
-        "requestPrepared" in object ||
-        "requestSent" in object ||
-        "requestRouted" in object ||
-        "responsePrepared" in object ||
-        "responseSent" in object ||
-        "error" in object);
-}
-exports.isHook = isHook;
-
-
-/***/ }),
-
-/***/ 5683:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FetchRPC = exports.wrapErrorResponseToTwirpError = exports.NodeHttpRPC = void 0;
-const http = __importStar(__nccwpck_require__(8611));
-const https = __importStar(__nccwpck_require__(5692));
-const url_1 = __nccwpck_require__(7016);
-const errors_1 = __nccwpck_require__(3315);
-/**
- * a node HTTP RPC implementation
- * @param options
- * @constructor
- */
-const NodeHttpRPC = (options) => ({
-    request(service, method, contentType, data) {
-        let client;
-        return new Promise((resolve, rejected) => {
-            const responseChunks = [];
-            const requestData = contentType === "application/protobuf"
-                ? Buffer.from(data)
-                : JSON.stringify(data);
-            const url = new url_1.URL(options.baseUrl);
-            const isHttps = url.protocol === "https:";
-            if (isHttps) {
-                client = https;
-            }
-            else {
-                client = http;
-            }
-            const prefix = url.pathname !== "/" ? url.pathname : "";
-            const req = client
-                .request(Object.assign(Object.assign({}, (options ? options : {})), { method: "POST", protocol: url.protocol, host: url.hostname, port: url.port ? url.port : isHttps ? 443 : 80, path: `${prefix}/${service}/${method}`, headers: Object.assign(Object.assign({}, (options.headers ? options.headers : {})), { "Content-Type": contentType, "Content-Length": contentType === "application/protobuf"
-                        ? Buffer.byteLength(requestData)
-                        : Buffer.from(requestData).byteLength }) }), (res) => {
-                res.on("data", (chunk) => responseChunks.push(chunk));
-                res.on("end", () => {
-                    const data = Buffer.concat(responseChunks);
-                    if (res.statusCode != 200) {
-                        rejected(wrapErrorResponseToTwirpError(data.toString()));
-                    }
-                    else {
-                        if (contentType === "application/json") {
-                            resolve(JSON.parse(data.toString()));
-                        }
-                        else {
-                            resolve(data);
-                        }
-                    }
-                });
-                res.on("error", (err) => {
-                    rejected(err);
-                });
-            })
-                .on("error", (err) => {
-                rejected(err);
-            });
-            req.end(requestData);
-        });
-    },
-});
-exports.NodeHttpRPC = NodeHttpRPC;
-function wrapErrorResponseToTwirpError(errorResponse) {
-    return errors_1.TwirpError.fromObject(JSON.parse(errorResponse));
-}
-exports.wrapErrorResponseToTwirpError = wrapErrorResponseToTwirpError;
-/**
- * a browser fetch RPC implementation
- */
-const FetchRPC = (options) => ({
-    request(service, method, contentType, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const headers = new Headers(options.headers);
-            headers.set("content-type", contentType);
-            const response = yield fetch(`${options.baseUrl}/${service}/${method}`, Object.assign(Object.assign({}, options), { method: "POST", headers, body: data instanceof Uint8Array ? data : JSON.stringify(data) }));
-            if (response.status === 200) {
-                if (contentType === "application/json") {
-                    return yield response.json();
-                }
-                return new Uint8Array(yield response.arrayBuffer());
-            }
-            throw errors_1.TwirpError.fromObject(yield response.json());
-        });
-    },
-});
-exports.FetchRPC = FetchRPC;
-
-
-/***/ }),
-
-/***/ 430:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TwirpContentType = void 0;
-__exportStar(__nccwpck_require__(5497), exports);
-__exportStar(__nccwpck_require__(1035), exports);
-__exportStar(__nccwpck_require__(4036), exports);
-__exportStar(__nccwpck_require__(3898), exports);
-__exportStar(__nccwpck_require__(3315), exports);
-__exportStar(__nccwpck_require__(9636), exports);
-__exportStar(__nccwpck_require__(5683), exports);
-var request_1 = __nccwpck_require__(9647);
-Object.defineProperty(exports, "TwirpContentType", ({ enumerable: true, get: function () { return request_1.TwirpContentType; } }));
-
-
-/***/ }),
-
-/***/ 4036:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.chainInterceptors = void 0;
-// chains multiple Interceptors into a single Interceptor.
-// The first interceptor wraps the second one, and so on.
-// Returns null if interceptors is empty.
-function chainInterceptors(...interceptors) {
-    if (interceptors.length === 0) {
-        return;
-    }
-    if (interceptors.length === 1) {
-        return interceptors[0];
-    }
-    const first = interceptors[0];
-    return (ctx, request, handler) => __awaiter(this, void 0, void 0, function* () {
-        let next = handler;
-        for (let i = interceptors.length - 1; i > 0; i--) {
-            next = ((next) => (ctx, typedRequest) => {
-                return interceptors[i](ctx, typedRequest, next);
-            })(next);
-        }
-        return first(ctx, request, next);
-    });
-}
-exports.chainInterceptors = chainInterceptors;
-
-
-/***/ }),
-
-/***/ 9647:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseTwirpPath = exports.getRequestData = exports.validateRequest = exports.getContentType = exports.TwirpContentType = void 0;
-const errors_1 = __nccwpck_require__(3315);
-/**
- * Supported Twirp Content-Type
- */
-var TwirpContentType;
-(function (TwirpContentType) {
-    TwirpContentType[TwirpContentType["Protobuf"] = 0] = "Protobuf";
-    TwirpContentType[TwirpContentType["JSON"] = 1] = "JSON";
-    TwirpContentType[TwirpContentType["Unknown"] = 2] = "Unknown";
-})(TwirpContentType = exports.TwirpContentType || (exports.TwirpContentType = {}));
-/**
- * Get supported content-type
- * @param mimeType
- */
-function getContentType(mimeType) {
-    switch (mimeType) {
-        case "application/protobuf":
-            return TwirpContentType.Protobuf;
-        case "application/json":
-            return TwirpContentType.JSON;
-        default:
-            return TwirpContentType.Unknown;
-    }
-}
-exports.getContentType = getContentType;
-/**
- * Validate a twirp request
- * @param ctx
- * @param request
- * @param pathPrefix
- */
-function validateRequest(ctx, request, pathPrefix) {
-    if (request.method !== "POST") {
-        const msg = `unsupported method ${request.method} (only POST is allowed)`;
-        throw new errors_1.BadRouteError(msg, request.method || "", request.url || "");
-    }
-    const path = parseTwirpPath(request.url || "");
-    if (path.pkgService !==
-        (ctx.packageName ? ctx.packageName + "." : "") + ctx.serviceName) {
-        const msg = `no handler for path ${request.url}`;
-        throw new errors_1.BadRouteError(msg, request.method || "", request.url || "");
-    }
-    if (path.prefix !== pathPrefix) {
-        const msg = `invalid path prefix ${path.prefix}, expected ${pathPrefix}, on path ${request.url}`;
-        throw new errors_1.BadRouteError(msg, request.method || "", request.url || "");
-    }
-    const mimeContentType = request.headers["content-type"] || "";
-    if (ctx.contentType === TwirpContentType.Unknown) {
-        const msg = `unexpected Content-Type: ${request.headers["content-type"]}`;
-        throw new errors_1.BadRouteError(msg, request.method || "", request.url || "");
-    }
-    return Object.assign(Object.assign({}, path), { mimeContentType, contentType: ctx.contentType });
-}
-exports.validateRequest = validateRequest;
-/**
- * Get request data from the body
- * @param req
- */
-function getRequestData(req) {
-    return new Promise((resolve, reject) => {
-        const reqWithRawBody = req;
-        if (reqWithRawBody.rawBody instanceof Buffer) {
-            resolve(reqWithRawBody.rawBody);
-            return;
-        }
-        const chunks = [];
-        req.on("data", (chunk) => chunks.push(chunk));
-        req.on("end", () => __awaiter(this, void 0, void 0, function* () {
-            const data = Buffer.concat(chunks);
-            resolve(data);
-        }));
-        req.on("error", (err) => {
-            if (req.aborted) {
-                reject(new errors_1.TwirpError(errors_1.TwirpErrorCode.DeadlineExceeded, "failed to read request: deadline exceeded"));
-            }
-            else {
-                reject(new errors_1.TwirpError(errors_1.TwirpErrorCode.Malformed, err.message).withCause(err));
-            }
-        });
-        req.on("close", () => {
-            reject(new errors_1.TwirpError(errors_1.TwirpErrorCode.Canceled, "failed to read request: context canceled"));
-        });
-    });
-}
-exports.getRequestData = getRequestData;
-/**
- * Parses twirp url path
- * @param path
- */
-function parseTwirpPath(path) {
-    const parts = path.split("/");
-    if (parts.length < 2) {
-        return {
-            pkgService: "",
-            method: "",
-            prefix: "",
-        };
-    }
-    return {
-        method: parts[parts.length - 1],
-        pkgService: parts[parts.length - 2],
-        prefix: parts.slice(0, parts.length - 2).join("/"),
-    };
-}
-exports.parseTwirpPath = parseTwirpPath;
-
-
-/***/ }),
-
-/***/ 1035:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.writeError = exports.TwirpServer = void 0;
-const hooks_1 = __nccwpck_require__(3898);
-const request_1 = __nccwpck_require__(9647);
-const errors_1 = __nccwpck_require__(3315);
-/**
- * Runtime server implementation of a TwirpServer
- */
-class TwirpServer {
-    constructor(options) {
-        this.pathPrefix = "/twirp";
-        this.hooks = [];
-        this.interceptors = [];
-        this.packageName = options.packageName;
-        this.serviceName = options.serviceName;
-        this.methodList = options.methodList;
-        this.matchRoute = options.matchRoute;
-        this.service = options.service;
-    }
-    /**
-     * Returns the prefix for this server
-     */
-    get prefix() {
-        return this.pathPrefix;
-    }
-    /**
-     * The http handler for twirp complaint endpoints
-     * @param options
-     */
-    httpHandler(options) {
-        return (req, resp) => {
-            // setup prefix
-            if ((options === null || options === void 0 ? void 0 : options.prefix) !== undefined) {
-                this.withPrefix(options.prefix);
-            }
-            return this._httpHandler(req, resp);
-        };
-    }
-    /**
-     * Adds interceptors or hooks to the request stack
-     * @param middlewares
-     */
-    use(...middlewares) {
-        middlewares.forEach((middleware) => {
-            if (hooks_1.isHook(middleware)) {
-                this.hooks.push(middleware);
-                return this;
-            }
-            this.interceptors.push(middleware);
-        });
-        return this;
-    }
-    /**
-     * Adds a prefix to the service url path
-     * @param prefix
-     */
-    withPrefix(prefix) {
-        if (prefix === false) {
-            this.pathPrefix = "";
-        }
-        else {
-            this.pathPrefix = prefix;
-        }
-        return this;
-    }
-    /**
-     * Returns the regex matching path for this twirp server
-     */
-    matchingPath() {
-        const baseRegex = this.baseURI().replace(/\./g, "\\.");
-        return new RegExp(`${baseRegex}\/(${this.methodList.join("|")})`);
-    }
-    /**
-     * Returns the base URI for this twirp server
-     */
-    baseURI() {
-        return `${this.pathPrefix}/${this.packageName ? this.packageName + "." : ""}${this.serviceName}`;
-    }
-    /**
-     * Create a twirp context
-     * @param req
-     * @param res
-     * @private
-     */
-    createContext(req, res) {
-        return {
-            packageName: this.packageName,
-            serviceName: this.serviceName,
-            methodName: "",
-            contentType: request_1.getContentType(req.headers["content-type"]),
-            req: req,
-            res: res,
-        };
-    }
-    /**
-     * Twrip server http handler implementation
-     * @param req
-     * @param resp
-     * @private
-     */
-    _httpHandler(req, resp) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const ctx = this.createContext(req, resp);
-            try {
-                yield this.invokeHook("requestReceived", ctx);
-                const { method, mimeContentType } = request_1.validateRequest(ctx, req, this.pathPrefix || "");
-                const handler = this.matchRoute(method, {
-                    onMatch: (ctx) => {
-                        return this.invokeHook("requestRouted", ctx);
-                    },
-                    onNotFound: () => {
-                        const msg = `no handler for path ${req.url}`;
-                        throw new errors_1.BadRouteError(msg, req.method || "", req.url || "");
-                    },
-                });
-                const body = yield request_1.getRequestData(req);
-                const response = yield handler(ctx, this.service, body, this.interceptors);
-                yield Promise.all([
-                    this.invokeHook("responsePrepared", ctx),
-                    // keep backwards compatibility till next release
-                    this.invokeHook("requestPrepared", ctx),
-                ]);
-                resp.statusCode = 200;
-                resp.setHeader("Content-Type", mimeContentType);
-                resp.end(response);
-            }
-            catch (e) {
-                yield this.invokeHook("error", ctx, mustBeTwirpError(e));
-                if (!resp.headersSent) {
-                    writeError(resp, e);
-                }
-            }
-            finally {
-                yield Promise.all([
-                    this.invokeHook("responseSent", ctx),
-                    // keep backwards compatibility till next release
-                    this.invokeHook("requestSent", ctx),
-                ]);
-            }
-        });
-    }
-    /**
-     * Invoke a hook
-     * @param hookName
-     * @param ctx
-     * @param err
-     * @protected
-     */
-    invokeHook(hookName, ctx, err) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.hooks.length === 0) {
-                return;
-            }
-            const chainedHooks = hooks_1.chainHooks(...this.hooks);
-            const hook = chainedHooks === null || chainedHooks === void 0 ? void 0 : chainedHooks[hookName];
-            if (hook) {
-                yield hook(ctx, err || new errors_1.InternalServerError("internal server error"));
-            }
-        });
-    }
-}
-exports.TwirpServer = TwirpServer;
-/**
- * Write http error response
- * @param res
- * @param error
- */
-function writeError(res, error) {
-    const twirpError = mustBeTwirpError(error);
-    res.setHeader("Content-Type", "application/json");
-    res.statusCode = errors_1.httpStatusFromErrorCode(twirpError.code);
-    res.end(twirpError.toJSON());
-}
-exports.writeError = writeError;
-/**
- * Make sure that the error passed is a TwirpError
- * otherwise it will wrap it into an InternalError
- * @param err
- */
-function mustBeTwirpError(err) {
-    if (err instanceof errors_1.TwirpError) {
-        return err;
-    }
-    return new errors_1.InternalServerErrorWith(err);
-}
-
-
-/***/ }),
-
 /***/ 6752:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -68503,6 +65774,7 @@ const MockAgent = __nccwpck_require__(7501)
 const MockPool = __nccwpck_require__(4004)
 const mockErrors = __nccwpck_require__(2429)
 const ProxyAgent = __nccwpck_require__(2720)
+const RetryHandler = __nccwpck_require__(3573)
 const { getGlobalDispatcher, setGlobalDispatcher } = __nccwpck_require__(2581)
 const DecoratorHandler = __nccwpck_require__(8840)
 const RedirectHandler = __nccwpck_require__(8299)
@@ -68524,6 +65796,7 @@ module.exports.Pool = Pool
 module.exports.BalancedPool = BalancedPool
 module.exports.Agent = Agent
 module.exports.ProxyAgent = ProxyAgent
+module.exports.RetryHandler = RetryHandler
 
 module.exports.DecoratorHandler = DecoratorHandler
 module.exports.RedirectHandler = RedirectHandler
@@ -69424,6 +66697,7 @@ function request (opts, callback) {
 }
 
 module.exports = request
+module.exports.RequestHandler = RequestHandler
 
 
 /***/ }),
@@ -69806,6 +67080,8 @@ const kBody = Symbol('kBody')
 const kAbort = Symbol('abort')
 const kContentType = Symbol('kContentType')
 
+const noop = () => {}
+
 module.exports = class BodyReadable extends Readable {
   constructor ({
     resume,
@@ -69939,37 +67215,50 @@ module.exports = class BodyReadable extends Readable {
     return this[kBody]
   }
 
-  async dump (opts) {
+  dump (opts) {
     let limit = opts && Number.isFinite(opts.limit) ? opts.limit : 262144
     const signal = opts && opts.signal
-    const abortFn = () => {
-      this.destroy()
-    }
-    let signalListenerCleanup
+
     if (signal) {
-      if (typeof signal !== 'object' || !('aborted' in signal)) {
-        throw new InvalidArgumentError('signal must be an AbortSignal')
-      }
-      util.throwIfAborted(signal)
-      signalListenerCleanup = util.addAbortListener(signal, abortFn)
-    }
-    try {
-      for await (const chunk of this) {
-        util.throwIfAborted(signal)
-        limit -= Buffer.byteLength(chunk)
-        if (limit < 0) {
-          return
+      try {
+        if (typeof signal !== 'object' || !('aborted' in signal)) {
+          throw new InvalidArgumentError('signal must be an AbortSignal')
         }
-      }
-    } catch {
-      util.throwIfAborted(signal)
-    } finally {
-      if (typeof signalListenerCleanup === 'function') {
-        signalListenerCleanup()
-      } else if (signalListenerCleanup) {
-        signalListenerCleanup[Symbol.dispose]()
+        util.throwIfAborted(signal)
+      } catch (err) {
+        return Promise.reject(err)
       }
     }
+
+    if (this.closed) {
+      return Promise.resolve(null)
+    }
+
+    return new Promise((resolve, reject) => {
+      const signalListenerCleanup = signal
+        ? util.addAbortListener(signal, () => {
+          this.destroy()
+        })
+        : noop
+
+      this
+        .on('close', function () {
+          signalListenerCleanup()
+          if (signal && signal.aborted) {
+            reject(signal.reason || Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }))
+          } else {
+            resolve(null)
+          }
+        })
+        .on('error', noop)
+        .on('data', function (chunk) {
+          limit -= chunk.length
+          if (limit <= 0) {
+            this.destroy()
+          }
+        })
+        .resume()
+    })
   }
 }
 
@@ -71349,13 +68638,13 @@ module.exports = {
 /***/ }),
 
 /***/ 296:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 module.exports = {
-  kConstruct: Symbol('constructable')
+  kConstruct: (__nccwpck_require__(6443).kConstruct)
 }
 
 
@@ -72341,11 +69630,9 @@ class Parser {
       socket[kReset] = true
     }
 
-    let pause
-    try {
-      pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false
-    } catch (err) {
-      util.destroy(socket, err)
+    const pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false
+
+    if (request.aborted) {
       return -1
     }
 
@@ -72392,13 +69679,8 @@ class Parser {
 
     this.bytesRead += buf.length
 
-    try {
-      if (request.onData(buf) === false) {
-        return constants.ERROR.PAUSED
-      }
-    } catch (err) {
-      util.destroy(socket, err)
-      return -1
+    if (request.onData(buf) === false) {
+      return constants.ERROR.PAUSED
     }
   }
 
@@ -72439,11 +69721,7 @@ class Parser {
       return -1
     }
 
-    try {
-      request.onComplete(headers)
-    } catch (err) {
-      errorRequest(client, request, err)
-    }
+    request.onComplete(headers)
 
     client[kQueue][client[kRunningIdx]++] = null
 
@@ -72607,7 +69885,7 @@ async function connect (client) {
     const idx = hostname.indexOf(']')
 
     assert(idx !== -1)
-    const ip = hostname.substr(1, idx - 1)
+    const ip = hostname.substring(1, idx)
 
     assert(net.isIP(ip))
     hostname = ip
@@ -73106,6 +70384,7 @@ function writeH2 (client, session, request) {
     return false
   }
 
+  /** @type {import('node:http2').ClientHttp2Stream} */
   let stream
   const h2State = client[kHTTP2SessionState]
 
@@ -73201,14 +70480,10 @@ function writeH2 (client, session, request) {
   const shouldEndStream = method === 'GET' || method === 'HEAD'
   if (expectContinue) {
     headers[HTTP2_HEADER_EXPECT] = '100-continue'
-    /**
-     * @type {import('node:http2').ClientHttp2Stream}
-     */
     stream = session.request(headers, { endStream: shouldEndStream, signal })
 
     stream.once('continue', writeBodyH2)
   } else {
-    /** @type {import('node:http2').ClientHttp2Stream} */
     stream = session.request(headers, {
       endStream: shouldEndStream,
       signal
@@ -73220,7 +70495,9 @@ function writeH2 (client, session, request) {
   ++h2State.openStreams
 
   stream.once('response', headers => {
-    if (request.onHeaders(Number(headers[HTTP2_HEADER_STATUS]), headers, stream.resume.bind(stream), '') === false) {
+    const { [HTTP2_HEADER_STATUS]: statusCode, ...realHeaders } = headers
+
+    if (request.onHeaders(Number(statusCode), realHeaders, stream.resume.bind(stream), '') === false) {
       stream.pause()
     }
   })
@@ -73230,13 +70507,17 @@ function writeH2 (client, session, request) {
   })
 
   stream.on('data', (chunk) => {
-    if (request.onData(chunk) === false) stream.pause()
+    if (request.onData(chunk) === false) {
+      stream.pause()
+    }
   })
 
   stream.once('close', () => {
     h2State.openStreams -= 1
     // TODO(HTTP/2): unref only if current streams count is 0
-    if (h2State.openStreams === 0) session.unref()
+    if (h2State.openStreams === 0) {
+      session.unref()
+    }
   })
 
   stream.once('error', function (err) {
@@ -73396,7 +70677,11 @@ function writeStream ({ h2stream, body, client, request, socket, contentLength, 
     }
   }
   const onAbort = function () {
-    onFinished(new RequestAbortedError())
+    if (finished) {
+      return
+    }
+    const err = new RequestAbortedError()
+    queueMicrotask(() => onFinished(err))
   }
   const onFinished = function (err) {
     if (finished) {
@@ -73796,7 +71081,7 @@ module.exports = {
 
 
 const { parseSetCookie } = __nccwpck_require__(8915)
-const { stringify, getHeadersList } = __nccwpck_require__(3834)
+const { stringify } = __nccwpck_require__(3834)
 const { webidl } = __nccwpck_require__(4222)
 const { Headers } = __nccwpck_require__(6349)
 
@@ -73872,14 +71157,13 @@ function getSetCookies (headers) {
 
   webidl.brandCheck(headers, Headers, { strict: false })
 
-  const cookies = getHeadersList(headers).cookies
+  const cookies = headers.getSetCookie()
 
   if (!cookies) {
     return []
   }
 
-  // In older versions of undici, cookies is a list of name:value.
-  return cookies.map((pair) => parseSetCookie(Array.isArray(pair) ? pair[1] : pair))
+  return cookies.map((pair) => parseSetCookie(pair))
 }
 
 /**
@@ -74307,14 +71591,15 @@ module.exports = {
 /***/ }),
 
 /***/ 3834:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((module) => {
 
 "use strict";
 
 
-const assert = __nccwpck_require__(2613)
-const { kHeadersList } = __nccwpck_require__(6443)
-
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
 function isCTLExcludingHtab (value) {
   if (value.length === 0) {
     return false
@@ -74575,31 +71860,13 @@ function stringify (cookie) {
   return out.join('; ')
 }
 
-let kHeadersListNode
-
-function getHeadersList (headers) {
-  if (headers[kHeadersList]) {
-    return headers[kHeadersList]
-  }
-
-  if (!kHeadersListNode) {
-    kHeadersListNode = Object.getOwnPropertySymbols(headers).find(
-      (symbol) => symbol.description === 'headers list'
-    )
-
-    assert(kHeadersListNode, 'Headers cannot be parsed')
-  }
-
-  const headersList = headers[kHeadersListNode]
-  assert(headersList)
-
-  return headersList
-}
-
 module.exports = {
   isCTLExcludingHtab,
-  stringify,
-  getHeadersList
+  validateCookieName,
+  validateCookiePath,
+  validateCookieValue,
+  toIMFDate,
+  stringify
 }
 
 
@@ -74798,6 +72065,132 @@ function onConnectTimeout (socket) {
 }
 
 module.exports = buildConnector
+
+
+/***/ }),
+
+/***/ 735:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {Record<string, string | undefined>} */
+const headerNameLowerCasedRecord = {}
+
+// https://developer.mozilla.org/docs/Web/HTTP/Headers
+const wellknownHeaderNames = [
+  'Accept',
+  'Accept-Encoding',
+  'Accept-Language',
+  'Accept-Ranges',
+  'Access-Control-Allow-Credentials',
+  'Access-Control-Allow-Headers',
+  'Access-Control-Allow-Methods',
+  'Access-Control-Allow-Origin',
+  'Access-Control-Expose-Headers',
+  'Access-Control-Max-Age',
+  'Access-Control-Request-Headers',
+  'Access-Control-Request-Method',
+  'Age',
+  'Allow',
+  'Alt-Svc',
+  'Alt-Used',
+  'Authorization',
+  'Cache-Control',
+  'Clear-Site-Data',
+  'Connection',
+  'Content-Disposition',
+  'Content-Encoding',
+  'Content-Language',
+  'Content-Length',
+  'Content-Location',
+  'Content-Range',
+  'Content-Security-Policy',
+  'Content-Security-Policy-Report-Only',
+  'Content-Type',
+  'Cookie',
+  'Cross-Origin-Embedder-Policy',
+  'Cross-Origin-Opener-Policy',
+  'Cross-Origin-Resource-Policy',
+  'Date',
+  'Device-Memory',
+  'Downlink',
+  'ECT',
+  'ETag',
+  'Expect',
+  'Expect-CT',
+  'Expires',
+  'Forwarded',
+  'From',
+  'Host',
+  'If-Match',
+  'If-Modified-Since',
+  'If-None-Match',
+  'If-Range',
+  'If-Unmodified-Since',
+  'Keep-Alive',
+  'Last-Modified',
+  'Link',
+  'Location',
+  'Max-Forwards',
+  'Origin',
+  'Permissions-Policy',
+  'Pragma',
+  'Proxy-Authenticate',
+  'Proxy-Authorization',
+  'RTT',
+  'Range',
+  'Referer',
+  'Referrer-Policy',
+  'Refresh',
+  'Retry-After',
+  'Sec-WebSocket-Accept',
+  'Sec-WebSocket-Extensions',
+  'Sec-WebSocket-Key',
+  'Sec-WebSocket-Protocol',
+  'Sec-WebSocket-Version',
+  'Server',
+  'Server-Timing',
+  'Service-Worker-Allowed',
+  'Service-Worker-Navigation-Preload',
+  'Set-Cookie',
+  'SourceMap',
+  'Strict-Transport-Security',
+  'Supports-Loading-Mode',
+  'TE',
+  'Timing-Allow-Origin',
+  'Trailer',
+  'Transfer-Encoding',
+  'Upgrade',
+  'Upgrade-Insecure-Requests',
+  'User-Agent',
+  'Vary',
+  'Via',
+  'WWW-Authenticate',
+  'X-Content-Type-Options',
+  'X-DNS-Prefetch-Control',
+  'X-Frame-Options',
+  'X-Permitted-Cross-Domain-Policies',
+  'X-Powered-By',
+  'X-Requested-With',
+  'X-XSS-Protection'
+]
+
+for (let i = 0; i < wellknownHeaderNames.length; ++i) {
+  const key = wellknownHeaderNames[i]
+  const lowerCasedKey = key.toLowerCase()
+  headerNameLowerCasedRecord[key] = headerNameLowerCasedRecord[lowerCasedKey] =
+    lowerCasedKey
+}
+
+// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+Object.setPrototypeOf(headerNameLowerCasedRecord, null)
+
+module.exports = {
+  wellknownHeaderNames,
+  headerNameLowerCasedRecord
+}
 
 
 /***/ }),
@@ -75001,6 +72394,19 @@ class ResponseExceededMaxSizeError extends UndiciError {
   }
 }
 
+class RequestRetryError extends UndiciError {
+  constructor (message, code, { headers, data }) {
+    super(message)
+    Error.captureStackTrace(this, RequestRetryError)
+    this.name = 'RequestRetryError'
+    this.message = message || 'Request retry error'
+    this.code = 'UND_ERR_REQ_RETRY'
+    this.statusCode = code
+    this.data = data
+    this.headers = headers
+  }
+}
+
 module.exports = {
   HTTPParserError,
   UndiciError,
@@ -75020,7 +72426,8 @@ module.exports = {
   NotSupportedError,
   ResponseContentLengthMismatchError,
   BalancedPoolMissingUpstreamError,
-  ResponseExceededMaxSizeError
+  ResponseExceededMaxSizeError,
+  RequestRetryError
 }
 
 
@@ -75262,9 +72669,9 @@ class Request {
   onBodySent (chunk) {
     if (this[kHandler].onBodySent) {
       try {
-        this[kHandler].onBodySent(chunk)
+        return this[kHandler].onBodySent(chunk)
       } catch (err) {
-        this.onError(err)
+        this.abort(err)
       }
     }
   }
@@ -75276,9 +72683,9 @@ class Request {
 
     if (this[kHandler].onRequestSent) {
       try {
-        this[kHandler].onRequestSent()
+        return this[kHandler].onRequestSent()
       } catch (err) {
-        this.onError(err)
+        this.abort(err)
       }
     }
   }
@@ -75303,14 +72710,23 @@ class Request {
       channels.headers.publish({ request: this, response: { statusCode, headers, statusText } })
     }
 
-    return this[kHandler].onHeaders(statusCode, headers, resume, statusText)
+    try {
+      return this[kHandler].onHeaders(statusCode, headers, resume, statusText)
+    } catch (err) {
+      this.abort(err)
+    }
   }
 
   onData (chunk) {
     assert(!this.aborted)
     assert(!this.completed)
 
-    return this[kHandler].onData(chunk)
+    try {
+      return this[kHandler].onData(chunk)
+    } catch (err) {
+      this.abort(err)
+      return false
+    }
   }
 
   onUpgrade (statusCode, headers, socket) {
@@ -75329,7 +72745,13 @@ class Request {
     if (channels.trailers.hasSubscribers) {
       channels.trailers.publish({ request: this, trailers })
     }
-    return this[kHandler].onComplete(trailers)
+
+    try {
+      return this[kHandler].onComplete(trailers)
+    } catch (err) {
+      // TODO (fix): This might be a bad idea?
+      this.onError(err)
+    }
   }
 
   onError (error) {
@@ -75343,6 +72765,7 @@ class Request {
       return
     }
     this.aborted = true
+
     return this[kHandler].onError(error)
   }
 
@@ -75579,7 +73002,9 @@ module.exports = {
   kHTTP2BuildRequest: Symbol('http2 build request'),
   kHTTP1BuildRequest: Symbol('http1 build request'),
   kHTTP2CopyHeaders: Symbol('http2 copy headers'),
-  kHTTPConnVersion: Symbol('http connection version')
+  kHTTPConnVersion: Symbol('http connection version'),
+  kRetryHandlerDefaultRetry: Symbol('retry agent default retry'),
+  kConstruct: Symbol('constructable')
 }
 
 
@@ -75600,6 +73025,7 @@ const { InvalidArgumentError } = __nccwpck_require__(8707)
 const { Blob } = __nccwpck_require__(181)
 const nodeUtil = __nccwpck_require__(9023)
 const { stringify } = __nccwpck_require__(3480)
+const { headerNameLowerCasedRecord } = __nccwpck_require__(735)
 
 const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(v => Number(v))
 
@@ -75716,13 +73142,13 @@ function getHostname (host) {
     const idx = host.indexOf(']')
 
     assert(idx !== -1)
-    return host.substr(1, idx - 1)
+    return host.substring(1, idx)
   }
 
   const idx = host.indexOf(':')
   if (idx === -1) return host
 
-  return host.substr(0, idx)
+  return host.substring(0, idx)
 }
 
 // IP addresses are not valid server names per RFC6066
@@ -75809,6 +73235,15 @@ function parseKeepAliveTimeout (val) {
   return m ? parseInt(m[1], 10) * 1000 : null
 }
 
+/**
+ * Retrieves a header name and returns its lowercase value.
+ * @param {string | Buffer} value Header name
+ * @returns {string}
+ */
+function headerNameToString (value) {
+  return headerNameLowerCasedRecord[value] || value.toLowerCase()
+}
+
 function parseHeaders (headers, obj = {}) {
   // For H2 support
   if (!Array.isArray(headers)) return headers
@@ -75819,7 +73254,7 @@ function parseHeaders (headers, obj = {}) {
 
     if (!val) {
       if (Array.isArray(headers[i + 1])) {
-        obj[key] = headers[i + 1]
+        obj[key] = headers[i + 1].map(x => x.toString('utf8'))
       } else {
         obj[key] = headers[i + 1].toString('utf8')
       }
@@ -76022,16 +73457,7 @@ function throwIfAborted (signal) {
   }
 }
 
-let events
 function addAbortListener (signal, listener) {
-  if (typeof Symbol.dispose === 'symbol') {
-    if (!events) {
-      events = __nccwpck_require__(4434)
-    }
-    if (typeof events.addAbortListener === 'function' && 'aborted' in signal) {
-      return events.addAbortListener(signal, listener)
-    }
-  }
   if ('addEventListener' in signal) {
     signal.addEventListener('abort', listener, { once: true })
     return () => signal.removeEventListener('abort', listener)
@@ -76055,6 +73481,21 @@ function toUSVString (val) {
   return `${val}`
 }
 
+// Parsed accordingly to RFC 9110
+// https://www.rfc-editor.org/rfc/rfc9110#field.content-range
+function parseRangeHeader (range) {
+  if (range == null || range === '') return { start: 0, end: null, size: null }
+
+  const m = range ? range.match(/^bytes (\d+)-(\d+)\/(\d+)?$/) : null
+  return m
+    ? {
+        start: parseInt(m[1]),
+        end: m[2] ? parseInt(m[2]) : null,
+        size: m[3] ? parseInt(m[3]) : null
+      }
+    : null
+}
+
 const kEnumerableProperty = Object.create(null)
 kEnumerableProperty.enumerable = true
 
@@ -76074,6 +73515,7 @@ module.exports = {
   isIterable,
   isAsyncIterable,
   isDestroyed,
+  headerNameToString,
   parseRawHeaders,
   parseHeaders,
   parseKeepAliveTimeout,
@@ -76088,9 +73530,11 @@ module.exports = {
   buildURL,
   throwIfAborted,
   addAbortListener,
+  parseRangeHeader,
   nodeMajor,
   nodeMinor,
-  nodeHasAutoSelectFamily: nodeMajor > 18 || (nodeMajor === 18 && nodeMinor >= 13)
+  nodeHasAutoSelectFamily: nodeMajor > 18 || (nodeMajor === 18 && nodeMinor >= 13),
+  safeHTTPMethods: ['GET', 'HEAD', 'OPTIONS', 'TRACE']
 }
 
 
@@ -76351,6 +73795,14 @@ const { isUint8Array, isArrayBuffer } = __nccwpck_require__(8253)
 const { File: UndiciFile } = __nccwpck_require__(3041)
 const { parseMIMEType, serializeAMimeType } = __nccwpck_require__(4322)
 
+let random
+try {
+  const crypto = __nccwpck_require__(7598)
+  random = (max) => crypto.randomInt(0, max)
+} catch {
+  random = (max) => Math.floor(Math.random(max))
+}
+
 let ReadableStream = globalThis.ReadableStream
 
 /** @type {globalThis['File']} */
@@ -76436,7 +73888,7 @@ function extractBody (object, keepalive = false) {
     // Set source to a copy of the bytes held by object.
     source = new Uint8Array(object.buffer.slice(object.byteOffset, object.byteOffset + object.byteLength))
   } else if (util.isFormDataLike(object)) {
-    const boundary = `----formdata-undici-0${`${Math.floor(Math.random() * 1e11)}`.padStart(11, '0')}`
+    const boundary = `----formdata-undici-0${`${random(1e11)}`.padStart(11, '0')}`
     const prefix = `--${boundary}\r\nContent-Disposition: form-data`
 
     /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
@@ -77219,17 +74671,14 @@ function dataURLProcessor (dataURL) {
  * @param {boolean} excludeFragment
  */
 function URLSerializer (url, excludeFragment = false) {
-  const href = url.href
-
   if (!excludeFragment) {
-    return href
+    return url.href
   }
 
-  const hash = href.lastIndexOf('#')
-  if (hash === -1) {
-    return href
-  }
-  return href.slice(0, hash)
+  const href = url.href
+  const hashLength = url.hash.length
+
+  return hashLength === 0 ? href : href.substring(0, href.length - hashLength)
 }
 
 // https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points
@@ -78413,7 +75862,7 @@ module.exports = {
 
 
 
-const { kHeadersList } = __nccwpck_require__(6443)
+const { kHeadersList, kConstruct } = __nccwpck_require__(6443)
 const { kGuard } = __nccwpck_require__(9710)
 const { kEnumerableProperty } = __nccwpck_require__(3440)
 const {
@@ -78421,11 +75870,19 @@ const {
   isValidHeaderName,
   isValidHeaderValue
 } = __nccwpck_require__(5523)
+const util = __nccwpck_require__(9023)
 const { webidl } = __nccwpck_require__(4222)
 const assert = __nccwpck_require__(2613)
 
 const kHeadersMap = Symbol('headers map')
 const kHeadersSortedMap = Symbol('headers map sorted')
+
+/**
+ * @param {number} code
+ */
+function isHTTPWhiteSpaceCharCode (code) {
+  return code === 0x00a || code === 0x00d || code === 0x009 || code === 0x020
+}
 
 /**
  * @see https://fetch.spec.whatwg.org/#concept-header-value-normalize
@@ -78435,12 +75892,12 @@ function headerValueNormalize (potentialValue) {
   //  To normalize a byte sequence potentialValue, remove
   //  any leading and trailing HTTP whitespace bytes from
   //  potentialValue.
+  let i = 0; let j = potentialValue.length
 
-  // Trimming the end with `.replace()` and a RegExp is typically subject to
-  // ReDoS. This is safer and faster.
-  let i = potentialValue.length
-  while (/[\r\n\t ]/.test(potentialValue.charAt(--i)));
-  return potentialValue.slice(0, i + 1).replace(/^[\r\n\t ]+/, '')
+  while (j > i && isHTTPWhiteSpaceCharCode(potentialValue.charCodeAt(j - 1))) --j
+  while (j > i && isHTTPWhiteSpaceCharCode(potentialValue.charCodeAt(i))) ++i
+
+  return i === 0 && j === potentialValue.length ? potentialValue : potentialValue.substring(i, j)
 }
 
 function fill (headers, object) {
@@ -78449,7 +75906,8 @@ function fill (headers, object) {
   // 1. If object is a sequence, then for each header in object:
   // Note: webidl conversion to array has already been done.
   if (Array.isArray(object)) {
-    for (const header of object) {
+    for (let i = 0; i < object.length; ++i) {
+      const header = object[i]
       // 1. If header does not contain exactly two items, then throw a TypeError.
       if (header.length !== 2) {
         throw webidl.errors.exception({
@@ -78459,15 +75917,16 @@ function fill (headers, object) {
       }
 
       // 2. Append (header’s first item, header’s second item) to headers.
-      headers.append(header[0], header[1])
+      appendHeader(headers, header[0], header[1])
     }
   } else if (typeof object === 'object' && object !== null) {
     // Note: null should throw
 
     // 2. Otherwise, object is a record, then for each key → value in object,
     //    append (key, value) to headers
-    for (const [key, value] of Object.entries(object)) {
-      headers.append(key, value)
+    const keys = Object.keys(object)
+    for (let i = 0; i < keys.length; ++i) {
+      appendHeader(headers, keys[i], object[keys[i]])
     }
   } else {
     throw webidl.errors.conversionFailed({
@@ -78478,6 +75937,50 @@ function fill (headers, object) {
   }
 }
 
+/**
+ * @see https://fetch.spec.whatwg.org/#concept-headers-append
+ */
+function appendHeader (headers, name, value) {
+  // 1. Normalize value.
+  value = headerValueNormalize(value)
+
+  // 2. If name is not a header name or value is not a
+  //    header value, then throw a TypeError.
+  if (!isValidHeaderName(name)) {
+    throw webidl.errors.invalidArgument({
+      prefix: 'Headers.append',
+      value: name,
+      type: 'header name'
+    })
+  } else if (!isValidHeaderValue(value)) {
+    throw webidl.errors.invalidArgument({
+      prefix: 'Headers.append',
+      value,
+      type: 'header value'
+    })
+  }
+
+  // 3. If headers’s guard is "immutable", then throw a TypeError.
+  // 4. Otherwise, if headers’s guard is "request" and name is a
+  //    forbidden header name, return.
+  // Note: undici does not implement forbidden header names
+  if (headers[kGuard] === 'immutable') {
+    throw new TypeError('immutable')
+  } else if (headers[kGuard] === 'request-no-cors') {
+    // 5. Otherwise, if headers’s guard is "request-no-cors":
+    // TODO
+  }
+
+  // 6. Otherwise, if headers’s guard is "response" and name is a
+  //    forbidden response-header name, return.
+
+  // 7. Append (name, value) to headers’s header list.
+  return headers[kHeadersList].append(name, value)
+
+  // 8. If headers’s guard is "request-no-cors", then remove
+  //    privileged no-CORS request headers from headers
+}
+
 class HeadersList {
   /** @type {[string, string][]|null} */
   cookies = null
@@ -78486,7 +75989,7 @@ class HeadersList {
     if (init instanceof HeadersList) {
       this[kHeadersMap] = new Map(init[kHeadersMap])
       this[kHeadersSortedMap] = init[kHeadersSortedMap]
-      this.cookies = init.cookies
+      this.cookies = init.cookies === null ? null : [...init.cookies]
     } else {
       this[kHeadersMap] = new Map(init)
       this[kHeadersSortedMap] = null
@@ -78548,7 +76051,7 @@ class HeadersList {
     //    the first such header to value and remove the
     //    others.
     // 2. Otherwise, append header (name, value) to list.
-    return this[kHeadersMap].set(lowercaseName, { name, value })
+    this[kHeadersMap].set(lowercaseName, { name, value })
   }
 
   // https://fetch.spec.whatwg.org/#concept-header-list-delete
@@ -78561,20 +76064,18 @@ class HeadersList {
       this.cookies = null
     }
 
-    return this[kHeadersMap].delete(name)
+    this[kHeadersMap].delete(name)
   }
 
   // https://fetch.spec.whatwg.org/#concept-header-list-get
   get (name) {
-    // 1. If list does not contain name, then return null.
-    if (!this.contains(name)) {
-      return null
-    }
+    const value = this[kHeadersMap].get(name.toLowerCase())
 
+    // 1. If list does not contain name, then return null.
     // 2. Return the values of all headers in list whose name
     //    is a byte-case-insensitive match for name,
     //    separated from each other by 0x2C 0x20, in order.
-    return this[kHeadersMap].get(name.toLowerCase())?.value ?? null
+    return value === undefined ? null : value.value
   }
 
   * [Symbol.iterator] () {
@@ -78600,6 +76101,9 @@ class HeadersList {
 // https://fetch.spec.whatwg.org/#headers-class
 class Headers {
   constructor (init = undefined) {
+    if (init === kConstruct) {
+      return
+    }
     this[kHeadersList] = new HeadersList()
 
     // The new Headers(init) constructor steps are:
@@ -78623,43 +76127,7 @@ class Headers {
     name = webidl.converters.ByteString(name)
     value = webidl.converters.ByteString(value)
 
-    // 1. Normalize value.
-    value = headerValueNormalize(value)
-
-    // 2. If name is not a header name or value is not a
-    //    header value, then throw a TypeError.
-    if (!isValidHeaderName(name)) {
-      throw webidl.errors.invalidArgument({
-        prefix: 'Headers.append',
-        value: name,
-        type: 'header name'
-      })
-    } else if (!isValidHeaderValue(value)) {
-      throw webidl.errors.invalidArgument({
-        prefix: 'Headers.append',
-        value,
-        type: 'header value'
-      })
-    }
-
-    // 3. If headers’s guard is "immutable", then throw a TypeError.
-    // 4. Otherwise, if headers’s guard is "request" and name is a
-    //    forbidden header name, return.
-    // Note: undici does not implement forbidden header names
-    if (this[kGuard] === 'immutable') {
-      throw new TypeError('immutable')
-    } else if (this[kGuard] === 'request-no-cors') {
-      // 5. Otherwise, if headers’s guard is "request-no-cors":
-      // TODO
-    }
-
-    // 6. Otherwise, if headers’s guard is "response" and name is a
-    //    forbidden response-header name, return.
-
-    // 7. Append (name, value) to headers’s header list.
-    // 8. If headers’s guard is "request-no-cors", then remove
-    //    privileged no-CORS request headers from headers
-    return this[kHeadersList].append(name, value)
+    return appendHeader(this, name, value)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-delete
@@ -78704,7 +76172,7 @@ class Headers {
     // 7. Delete name from this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this.
-    return this[kHeadersList].delete(name)
+    this[kHeadersList].delete(name)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-get
@@ -78797,7 +76265,7 @@ class Headers {
     // 7. Set (name, value) in this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this
-    return this[kHeadersList].set(name, value)
+    this[kHeadersList].set(name, value)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-getsetcookie
@@ -78833,7 +76301,8 @@ class Headers {
     const cookies = this[kHeadersList].cookies
 
     // 3. For each name of names:
-    for (const [name, value] of names) {
+    for (let i = 0; i < names.length; ++i) {
+      const [name, value] = names[i]
       // 1. If name is `set-cookie`, then:
       if (name === 'set-cookie') {
         // 1. Let values be a list of all values of headers in list whose name
@@ -78841,8 +76310,8 @@ class Headers {
 
         // 2. For each value of values:
         // 1. Append (name, value) to headers.
-        for (const value of cookies) {
-          headers.push([name, value])
+        for (let j = 0; j < cookies.length; ++j) {
+          headers.push([name, cookies[j]])
         }
       } else {
         // 2. Otherwise:
@@ -78866,6 +76335,12 @@ class Headers {
   keys () {
     webidl.brandCheck(this, Headers)
 
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'key')
+    }
+
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
       'Headers',
@@ -78876,6 +76351,12 @@ class Headers {
   values () {
     webidl.brandCheck(this, Headers)
 
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'value')
+    }
+
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
       'Headers',
@@ -78885,6 +76366,12 @@ class Headers {
 
   entries () {
     webidl.brandCheck(this, Headers)
+
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'key+value')
+    }
 
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
@@ -78937,6 +76424,9 @@ Object.defineProperties(Headers.prototype, {
   [Symbol.toStringTag]: {
     value: 'Headers',
     configurable: true
+  },
+  [util.inspect.custom]: {
+    enumerable: false
   }
 })
 
@@ -79257,7 +76747,7 @@ function finalizeAndReportTiming (response, initiatorType = 'other') {
   }
 
   // 8. If response’s timing allow passed flag is not set, then:
-  if (!timingInfo.timingAllowPassed) {
+  if (!response.timingAllowPassed) {
     //  1. Set timingInfo to a the result of creating an opaque timing info for timingInfo.
     timingInfo = createOpaqueTimingInfo({
       startTime: timingInfo.startTime
@@ -80174,6 +77664,9 @@ function httpRedirectFetch (fetchParams, response) {
     // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name
     request.headersList.delete('authorization')
 
+    // https://fetch.spec.whatwg.org/#authentication-entries
+    request.headersList.delete('proxy-authorization', true)
+
     // "Cookie" and "Host" are forbidden request-headers, which undici doesn't implement.
     request.headersList.delete('cookie')
     request.headersList.delete('host')
@@ -80928,7 +78421,7 @@ async function httpNetworkFetch (
         path: url.pathname + url.search,
         origin: url.origin,
         method: request.method,
-        body: fetchParams.controller.dispatcher.isMockActive ? request.body && request.body.source : body,
+        body: fetchParams.controller.dispatcher.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
         headers: request.headersList.entries,
         maxRedirections: 0,
         upgrade: request.mode === 'websocket' ? 'websocket' : undefined
@@ -80973,7 +78466,7 @@ async function httpNetworkFetch (
                 location = val
               }
 
-              headers.append(key, val)
+              headers[kHeadersList].append(key, val)
             }
           } else {
             const keys = Object.keys(headersList)
@@ -80987,7 +78480,7 @@ async function httpNetworkFetch (
                 location = val
               }
 
-              headers.append(key, val)
+              headers[kHeadersList].append(key, val)
             }
           }
 
@@ -81091,7 +78584,7 @@ async function httpNetworkFetch (
             const key = headersList[n + 0].toString('latin1')
             const val = headersList[n + 1].toString('latin1')
 
-            headers.append(key, val)
+            headers[kHeadersList].append(key, val)
           }
 
           resolve({
@@ -81134,7 +78627,8 @@ const {
   isValidHTTPToken,
   sameOrigin,
   normalizeMethod,
-  makePolicyContainer
+  makePolicyContainer,
+  normalizeMethodRecord
 } = __nccwpck_require__(5523)
 const {
   forbiddenMethodsSet,
@@ -81151,13 +78645,12 @@ const { kHeaders, kSignal, kState, kGuard, kRealm } = __nccwpck_require__(9710)
 const { webidl } = __nccwpck_require__(4222)
 const { getGlobalOrigin } = __nccwpck_require__(5628)
 const { URLSerializer } = __nccwpck_require__(4322)
-const { kHeadersList } = __nccwpck_require__(6443)
+const { kHeadersList, kConstruct } = __nccwpck_require__(6443)
 const assert = __nccwpck_require__(2613)
 const { getMaxListeners, setMaxListeners, getEventListeners, defaultMaxListeners } = __nccwpck_require__(4434)
 
 let TransformStream = globalThis.TransformStream
 
-const kInit = Symbol('init')
 const kAbortController = Symbol('abortController')
 
 const requestFinalizer = new FinalizationRegistry(({ signal, abort }) => {
@@ -81168,7 +78661,7 @@ const requestFinalizer = new FinalizationRegistry(({ signal, abort }) => {
 class Request {
   // https://fetch.spec.whatwg.org/#dom-request
   constructor (input, init = {}) {
-    if (input === kInit) {
+    if (input === kConstruct) {
       return
     }
 
@@ -81307,8 +78800,10 @@ class Request {
       urlList: [...request.urlList]
     })
 
+    const initHasKey = Object.keys(init).length !== 0
+
     // 13. If init is not empty, then:
-    if (Object.keys(init).length > 0) {
+    if (initHasKey) {
       // 1. If request’s mode is "navigate", then set it to "same-origin".
       if (request.mode === 'navigate') {
         request.mode = 'same-origin'
@@ -81423,7 +78918,7 @@ class Request {
     }
 
     // 23. If init["integrity"] exists, then set request’s integrity metadata to it.
-    if (init.integrity !== undefined && init.integrity != null) {
+    if (init.integrity != null) {
       request.integrity = String(init.integrity)
     }
 
@@ -81439,16 +78934,16 @@ class Request {
 
       // 2. If method is not a method or method is a forbidden method, then
       // throw a TypeError.
-      if (!isValidHTTPToken(init.method)) {
-        throw TypeError(`'${init.method}' is not a valid HTTP method.`)
+      if (!isValidHTTPToken(method)) {
+        throw new TypeError(`'${method}' is not a valid HTTP method.`)
       }
 
       if (forbiddenMethodsSet.has(method.toUpperCase())) {
-        throw TypeError(`'${init.method}' HTTP method is unsupported.`)
+        throw new TypeError(`'${method}' HTTP method is unsupported.`)
       }
 
       // 3. Normalize method.
-      method = normalizeMethod(init.method)
+      method = normalizeMethodRecord[method] ?? normalizeMethod(method)
 
       // 4. Set request’s method to method.
       request.method = method
@@ -81519,7 +79014,7 @@ class Request {
     // 30. Set this’s headers to a new Headers object with this’s relevant
     // Realm, whose header list is request’s header list and guard is
     // "request".
-    this[kHeaders] = new Headers()
+    this[kHeaders] = new Headers(kConstruct)
     this[kHeaders][kHeadersList] = request.headersList
     this[kHeaders][kGuard] = 'request'
     this[kHeaders][kRealm] = this[kRealm]
@@ -81539,25 +79034,25 @@ class Request {
     }
 
     // 32. If init is not empty, then:
-    if (Object.keys(init).length !== 0) {
+    if (initHasKey) {
+      /** @type {HeadersList} */
+      const headersList = this[kHeaders][kHeadersList]
       // 1. Let headers be a copy of this’s headers and its associated header
       // list.
-      let headers = new Headers(this[kHeaders])
-
       // 2. If init["headers"] exists, then set headers to init["headers"].
-      if (init.headers !== undefined) {
-        headers = init.headers
-      }
+      const headers = init.headers !== undefined ? init.headers : new HeadersList(headersList)
 
       // 3. Empty this’s headers’s header list.
-      this[kHeaders][kHeadersList].clear()
+      headersList.clear()
 
       // 4. If headers is a Headers object, then for each header in its header
       // list, append header’s name/header’s value to this’s headers.
-      if (headers.constructor.name === 'Headers') {
+      if (headers instanceof HeadersList) {
         for (const [key, val] of headers) {
-          this[kHeaders].append(key, val)
+          headersList.append(key, val)
         }
+        // Note: Copy the `set-cookie` meta-data.
+        headersList.cookies = headers.cookies
       } else {
         // 5. Otherwise, fill this’s headers with headers.
         fillHeaders(this[kHeaders], headers)
@@ -81846,10 +79341,10 @@ class Request {
 
     // 3. Let clonedRequestObject be the result of creating a Request object,
     // given clonedRequest, this’s headers’s guard, and this’s relevant Realm.
-    const clonedRequestObject = new Request(kInit)
+    const clonedRequestObject = new Request(kConstruct)
     clonedRequestObject[kState] = clonedRequest
     clonedRequestObject[kRealm] = this[kRealm]
-    clonedRequestObject[kHeaders] = new Headers()
+    clonedRequestObject[kHeaders] = new Headers(kConstruct)
     clonedRequestObject[kHeaders][kHeadersList] = clonedRequest.headersList
     clonedRequestObject[kHeaders][kGuard] = this[kHeaders][kGuard]
     clonedRequestObject[kHeaders][kRealm] = this[kHeaders][kRealm]
@@ -82099,7 +79594,7 @@ const { webidl } = __nccwpck_require__(4222)
 const { FormData } = __nccwpck_require__(3073)
 const { getGlobalOrigin } = __nccwpck_require__(5628)
 const { URLSerializer } = __nccwpck_require__(4322)
-const { kHeadersList } = __nccwpck_require__(6443)
+const { kHeadersList, kConstruct } = __nccwpck_require__(6443)
 const assert = __nccwpck_require__(2613)
 const { types } = __nccwpck_require__(9023)
 
@@ -82220,7 +79715,7 @@ class Response {
     // 2. Set this’s headers to a new Headers object with this’s relevant
     // Realm, whose header list is this’s response’s header list and guard
     // is "response".
-    this[kHeaders] = new Headers()
+    this[kHeaders] = new Headers(kConstruct)
     this[kHeaders][kGuard] = 'response'
     this[kHeaders][kHeadersList] = this[kState].headersList
     this[kHeaders][kRealm] = this[kRealm]
@@ -82590,11 +80085,7 @@ webidl.converters.XMLHttpRequestBodyInit = function (V) {
     return webidl.converters.Blob(V, { strict: false })
   }
 
-  if (
-    types.isAnyArrayBuffer(V) ||
-    types.isTypedArray(V) ||
-    types.isDataView(V)
-  ) {
+  if (types.isArrayBuffer(V) || types.isTypedArray(V) || types.isDataView(V)) {
     return webidl.converters.BufferSource(V)
   }
 
@@ -82684,14 +80175,18 @@ const { isBlobLike, toUSVString, ReadableStreamFrom } = __nccwpck_require__(3440
 const assert = __nccwpck_require__(2613)
 const { isUint8Array } = __nccwpck_require__(8253)
 
+let supportedHashes = []
+
 // https://nodejs.org/api/crypto.html#determining-if-crypto-support-is-unavailable
 /** @type {import('crypto')|undefined} */
 let crypto
 
 try {
   crypto = __nccwpck_require__(6982)
+  const possibleRelevantHashes = ['sha256', 'sha384', 'sha512']
+  supportedHashes = crypto.getHashes().filter((hash) => possibleRelevantHashes.includes(hash))
+/* c8 ignore next 3 */
 } catch {
-
 }
 
 function responseURL (response) {
@@ -82780,52 +80275,57 @@ function isValidReasonPhrase (statusText) {
   return true
 }
 
-function isTokenChar (c) {
-  return !(
-    c >= 0x7f ||
-    c <= 0x20 ||
-    c === '(' ||
-    c === ')' ||
-    c === '<' ||
-    c === '>' ||
-    c === '@' ||
-    c === ',' ||
-    c === ';' ||
-    c === ':' ||
-    c === '\\' ||
-    c === '"' ||
-    c === '/' ||
-    c === '[' ||
-    c === ']' ||
-    c === '?' ||
-    c === '=' ||
-    c === '{' ||
-    c === '}'
-  )
+/**
+ * @see https://tools.ietf.org/html/rfc7230#section-3.2.6
+ * @param {number} c
+ */
+function isTokenCharCode (c) {
+  switch (c) {
+    case 0x22:
+    case 0x28:
+    case 0x29:
+    case 0x2c:
+    case 0x2f:
+    case 0x3a:
+    case 0x3b:
+    case 0x3c:
+    case 0x3d:
+    case 0x3e:
+    case 0x3f:
+    case 0x40:
+    case 0x5b:
+    case 0x5c:
+    case 0x5d:
+    case 0x7b:
+    case 0x7d:
+      // DQUOTE and "(),/:;<=>?@[\]{}"
+      return false
+    default:
+      // VCHAR %x21-7E
+      return c >= 0x21 && c <= 0x7e
+  }
 }
 
-// See RFC 7230, Section 3.2.6.
-// https://github.com/chromium/chromium/blob/d7da0240cae77824d1eda25745c4022757499131/third_party/blink/renderer/platform/network/http_parsers.cc#L321
+/**
+ * @param {string} characters
+ */
 function isValidHTTPToken (characters) {
-  if (!characters || typeof characters !== 'string') {
+  if (characters.length === 0) {
     return false
   }
   for (let i = 0; i < characters.length; ++i) {
-    const c = characters.charCodeAt(i)
-    if (c > 0x7f || !isTokenChar(c)) {
+    if (!isTokenCharCode(characters.charCodeAt(i))) {
       return false
     }
   }
   return true
 }
 
-// https://fetch.spec.whatwg.org/#header-name
-// https://github.com/chromium/chromium/blob/b3d37e6f94f87d59e44662d6078f6a12de845d17/net/http/http_util.cc#L342
+/**
+ * @see https://fetch.spec.whatwg.org/#header-name
+ * @param {string} potentialValue
+ */
 function isValidHeaderName (potentialValue) {
-  if (potentialValue.length === 0) {
-    return false
-  }
-
   return isValidHTTPToken(potentialValue)
 }
 
@@ -83214,66 +80714,56 @@ function bytesMatch (bytes, metadataList) {
     return true
   }
 
-  // 3. If parsedMetadata is the empty set, return true.
+  // 3. If response is not eligible for integrity validation, return false.
+  // TODO
+
+  // 4. If parsedMetadata is the empty set, return true.
   if (parsedMetadata.length === 0) {
     return true
   }
 
-  // 4. Let metadata be the result of getting the strongest
+  // 5. Let metadata be the result of getting the strongest
   //    metadata from parsedMetadata.
-  const list = parsedMetadata.sort((c, d) => d.algo.localeCompare(c.algo))
-  // get the strongest algorithm
-  const strongest = list[0].algo
-  // get all entries that use the strongest algorithm; ignore weaker
-  const metadata = list.filter((item) => item.algo === strongest)
+  const strongest = getStrongestMetadata(parsedMetadata)
+  const metadata = filterMetadataListByAlgorithm(parsedMetadata, strongest)
 
-  // 5. For each item in metadata:
+  // 6. For each item in metadata:
   for (const item of metadata) {
     // 1. Let algorithm be the alg component of item.
     const algorithm = item.algo
 
     // 2. Let expectedValue be the val component of item.
-    let expectedValue = item.hash
+    const expectedValue = item.hash
 
     // See https://github.com/web-platform-tests/wpt/commit/e4c5cc7a5e48093220528dfdd1c4012dc3837a0e
     // "be liberal with padding". This is annoying, and it's not even in the spec.
 
-    if (expectedValue.endsWith('==')) {
-      expectedValue = expectedValue.slice(0, -2)
-    }
-
     // 3. Let actualValue be the result of applying algorithm to bytes.
     let actualValue = crypto.createHash(algorithm).update(bytes).digest('base64')
 
-    if (actualValue.endsWith('==')) {
-      actualValue = actualValue.slice(0, -2)
+    if (actualValue[actualValue.length - 1] === '=') {
+      if (actualValue[actualValue.length - 2] === '=') {
+        actualValue = actualValue.slice(0, -2)
+      } else {
+        actualValue = actualValue.slice(0, -1)
+      }
     }
 
     // 4. If actualValue is a case-sensitive match for expectedValue,
     //    return true.
-    if (actualValue === expectedValue) {
-      return true
-    }
-
-    let actualBase64URL = crypto.createHash(algorithm).update(bytes).digest('base64url')
-
-    if (actualBase64URL.endsWith('==')) {
-      actualBase64URL = actualBase64URL.slice(0, -2)
-    }
-
-    if (actualBase64URL === expectedValue) {
+    if (compareBase64Mixed(actualValue, expectedValue)) {
       return true
     }
   }
 
-  // 6. Return false.
+  // 7. Return false.
   return false
 }
 
 // https://w3c.github.io/webappsec-subresource-integrity/#grammardef-hash-with-options
 // https://www.w3.org/TR/CSP2/#source-list-syntax
 // https://www.rfc-editor.org/rfc/rfc5234#appendix-B.1
-const parseHashWithOptions = /((?<algo>sha256|sha384|sha512)-(?<hash>[A-z0-9+/]{1}.*={0,2}))( +[\x21-\x7e]?)?/i
+const parseHashWithOptions = /(?<algo>sha256|sha384|sha512)-((?<hash>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)={0,2}(?:\s|$)( +[!-~]*)?)?/i
 
 /**
  * @see https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata
@@ -83287,8 +80777,6 @@ function parseMetadata (metadata) {
   // 2. Let empty be equal to true.
   let empty = true
 
-  const supportedHashes = crypto.getHashes()
-
   // 3. For each token returned by splitting metadata on spaces:
   for (const token of metadata.split(' ')) {
     // 1. Set empty to false.
@@ -83298,7 +80786,11 @@ function parseMetadata (metadata) {
     const parsedToken = parseHashWithOptions.exec(token)
 
     // 3. If token does not parse, continue to the next token.
-    if (parsedToken === null || parsedToken.groups === undefined) {
+    if (
+      parsedToken === null ||
+      parsedToken.groups === undefined ||
+      parsedToken.groups.algo === undefined
+    ) {
       // Note: Chromium blocks the request at this point, but Firefox
       // gives a warning that an invalid integrity was given. The
       // correct behavior is to ignore these, and subsequently not
@@ -83307,11 +80799,11 @@ function parseMetadata (metadata) {
     }
 
     // 4. Let algorithm be the hash-algo component of token.
-    const algorithm = parsedToken.groups.algo
+    const algorithm = parsedToken.groups.algo.toLowerCase()
 
     // 5. If algorithm is a hash function recognized by the user
     //    agent, add the parsed token to result.
-    if (supportedHashes.includes(algorithm.toLowerCase())) {
+    if (supportedHashes.includes(algorithm)) {
       result.push(parsedToken.groups)
     }
   }
@@ -83322,6 +80814,82 @@ function parseMetadata (metadata) {
   }
 
   return result
+}
+
+/**
+ * @param {{ algo: 'sha256' | 'sha384' | 'sha512' }[]} metadataList
+ */
+function getStrongestMetadata (metadataList) {
+  // Let algorithm be the algo component of the first item in metadataList.
+  // Can be sha256
+  let algorithm = metadataList[0].algo
+  // If the algorithm is sha512, then it is the strongest
+  // and we can return immediately
+  if (algorithm[3] === '5') {
+    return algorithm
+  }
+
+  for (let i = 1; i < metadataList.length; ++i) {
+    const metadata = metadataList[i]
+    // If the algorithm is sha512, then it is the strongest
+    // and we can break the loop immediately
+    if (metadata.algo[3] === '5') {
+      algorithm = 'sha512'
+      break
+    // If the algorithm is sha384, then a potential sha256 or sha384 is ignored
+    } else if (algorithm[3] === '3') {
+      continue
+    // algorithm is sha256, check if algorithm is sha384 and if so, set it as
+    // the strongest
+    } else if (metadata.algo[3] === '3') {
+      algorithm = 'sha384'
+    }
+  }
+  return algorithm
+}
+
+function filterMetadataListByAlgorithm (metadataList, algorithm) {
+  if (metadataList.length === 1) {
+    return metadataList
+  }
+
+  let pos = 0
+  for (let i = 0; i < metadataList.length; ++i) {
+    if (metadataList[i].algo === algorithm) {
+      metadataList[pos++] = metadataList[i]
+    }
+  }
+
+  metadataList.length = pos
+
+  return metadataList
+}
+
+/**
+ * Compares two base64 strings, allowing for base64url
+ * in the second string.
+ *
+* @param {string} actualValue always base64
+ * @param {string} expectedValue base64 or base64url
+ * @returns {boolean}
+ */
+function compareBase64Mixed (actualValue, expectedValue) {
+  if (actualValue.length !== expectedValue.length) {
+    return false
+  }
+  for (let i = 0; i < actualValue.length; ++i) {
+    if (actualValue[i] !== expectedValue[i]) {
+      if (
+        (actualValue[i] === '+' && expectedValue[i] === '-') ||
+        (actualValue[i] === '/' && expectedValue[i] === '_')
+      ) {
+        continue
+      }
+      return false
+    }
+  }
+
+  return true
 }
 
 // https://w3c.github.io/webappsec-upgrade-insecure-requests/#upgrade-request
@@ -83370,11 +80938,30 @@ function isCancelled (fetchParams) {
     fetchParams.controller.state === 'terminated'
 }
 
-// https://fetch.spec.whatwg.org/#concept-method-normalize
+const normalizeMethodRecord = {
+  delete: 'DELETE',
+  DELETE: 'DELETE',
+  get: 'GET',
+  GET: 'GET',
+  head: 'HEAD',
+  HEAD: 'HEAD',
+  options: 'OPTIONS',
+  OPTIONS: 'OPTIONS',
+  post: 'POST',
+  POST: 'POST',
+  put: 'PUT',
+  PUT: 'PUT'
+}
+
+// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+Object.setPrototypeOf(normalizeMethodRecord, null)
+
+/**
+ * @see https://fetch.spec.whatwg.org/#concept-method-normalize
+ * @param {string} method
+ */
 function normalizeMethod (method) {
-  return /^(DELETE|GET|HEAD|OPTIONS|POST|PUT)$/i.test(method)
-    ? method.toUpperCase()
-    : method
+  return normalizeMethodRecord[method.toLowerCase()] ?? method
 }
 
 // https://infra.spec.whatwg.org/#serialize-a-javascript-value-to-a-json-string
@@ -83719,7 +81306,9 @@ module.exports = {
   urlIsLocal,
   urlHasHttpsScheme,
   urlIsHttpHttpsScheme,
-  readAllBytes
+  readAllBytes,
+  normalizeMethodRecord,
+  parseMetadata
 }
 
 
@@ -84158,12 +81747,10 @@ webidl.converters.ByteString = function (V) {
   // 2. If the value of any element of x is greater than
   //    255, then throw a TypeError.
   for (let index = 0; index < x.length; index++) {
-    const charCode = x.charCodeAt(index)
-
-    if (charCode > 255) {
+    if (x.charCodeAt(index) > 255) {
       throw new TypeError(
         'Cannot convert argument to a ByteString because the character at ' +
-        `index ${index} has a value of ${charCode} which is greater than 255.`
+        `index ${index} has a value of ${x.charCodeAt(index)} which is greater than 255.`
       )
     }
   }
@@ -85808,12 +83395,17 @@ function parseLocation (statusCode, headers) {
 
 // https://tools.ietf.org/html/rfc7231#section-6.4.4
 function shouldRemoveHeader (header, removeContent, unknownOrigin) {
-  return (
-    (header.length === 4 && header.toString().toLowerCase() === 'host') ||
-    (removeContent && header.toString().toLowerCase().indexOf('content-') === 0) ||
-    (unknownOrigin && header.length === 13 && header.toString().toLowerCase() === 'authorization') ||
-    (unknownOrigin && header.length === 6 && header.toString().toLowerCase() === 'cookie')
-  )
+  if (header.length === 4) {
+    return util.headerNameToString(header) === 'host'
+  }
+  if (removeContent && util.headerNameToString(header).startsWith('content-')) {
+    return true
+  }
+  if (unknownOrigin && (header.length === 13 || header.length === 6 || header.length === 19)) {
+    const name = util.headerNameToString(header)
+    return name === 'authorization' || name === 'cookie' || name === 'proxy-authorization'
+  }
+  return false
 }
 
 // https://tools.ietf.org/html/rfc7231#section-6.4
@@ -85838,6 +83430,349 @@ function cleanRequestHeaders (headers, removeContent, unknownOrigin) {
 }
 
 module.exports = RedirectHandler
+
+
+/***/ }),
+
+/***/ 3573:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const assert = __nccwpck_require__(2613)
+
+const { kRetryHandlerDefaultRetry } = __nccwpck_require__(6443)
+const { RequestRetryError } = __nccwpck_require__(8707)
+const { isDisturbed, parseHeaders, parseRangeHeader } = __nccwpck_require__(3440)
+
+function calculateRetryAfterHeader (retryAfter) {
+  const current = Date.now()
+  const diff = new Date(retryAfter).getTime() - current
+
+  return diff
+}
+
+class RetryHandler {
+  constructor (opts, handlers) {
+    const { retryOptions, ...dispatchOpts } = opts
+    const {
+      // Retry scoped
+      retry: retryFn,
+      maxRetries,
+      maxTimeout,
+      minTimeout,
+      timeoutFactor,
+      // Response scoped
+      methods,
+      errorCodes,
+      retryAfter,
+      statusCodes
+    } = retryOptions ?? {}
+
+    this.dispatch = handlers.dispatch
+    this.handler = handlers.handler
+    this.opts = dispatchOpts
+    this.abort = null
+    this.aborted = false
+    this.retryOpts = {
+      retry: retryFn ?? RetryHandler[kRetryHandlerDefaultRetry],
+      retryAfter: retryAfter ?? true,
+      maxTimeout: maxTimeout ?? 30 * 1000, // 30s,
+      timeout: minTimeout ?? 500, // .5s
+      timeoutFactor: timeoutFactor ?? 2,
+      maxRetries: maxRetries ?? 5,
+      // What errors we should retry
+      methods: methods ?? ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE'],
+      // Indicates which errors to retry
+      statusCodes: statusCodes ?? [500, 502, 503, 504, 429],
+      // List of errors to retry
+      errorCodes: errorCodes ?? [
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ENOTFOUND',
+        'ENETDOWN',
+        'ENETUNREACH',
+        'EHOSTDOWN',
+        'EHOSTUNREACH',
+        'EPIPE'
+      ]
+    }
+
+    this.retryCount = 0
+    this.start = 0
+    this.end = null
+    this.etag = null
+    this.resume = null
+
+    // Handle possible onConnect duplication
+    this.handler.onConnect(reason => {
+      this.aborted = true
+      if (this.abort) {
+        this.abort(reason)
+      } else {
+        this.reason = reason
+      }
+    })
+  }
+
+  onRequestSent () {
+    if (this.handler.onRequestSent) {
+      this.handler.onRequestSent()
+    }
+  }
+
+  onUpgrade (statusCode, headers, socket) {
+    if (this.handler.onUpgrade) {
+      this.handler.onUpgrade(statusCode, headers, socket)
+    }
+  }
+
+  onConnect (abort) {
+    if (this.aborted) {
+      abort(this.reason)
+    } else {
+      this.abort = abort
+    }
+  }
+
+  onBodySent (chunk) {
+    if (this.handler.onBodySent) return this.handler.onBodySent(chunk)
+  }
+
+  static [kRetryHandlerDefaultRetry] (err, { state, opts }, cb) {
+    const { statusCode, code, headers } = err
+    const { method, retryOptions } = opts
+    const {
+      maxRetries,
+      timeout,
+      maxTimeout,
+      timeoutFactor,
+      statusCodes,
+      errorCodes,
+      methods
+    } = retryOptions
+    let { counter, currentTimeout } = state
+
+    currentTimeout =
+      currentTimeout != null && currentTimeout > 0 ? currentTimeout : timeout
+
+    // Any code that is not a Undici's originated and allowed to retry
+    if (
+      code &&
+      code !== 'UND_ERR_REQ_RETRY' &&
+      code !== 'UND_ERR_SOCKET' &&
+      !errorCodes.includes(code)
+    ) {
+      cb(err)
+      return
+    }
+
+    // If a set of method are provided and the current method is not in the list
+    if (Array.isArray(methods) && !methods.includes(method)) {
+      cb(err)
+      return
+    }
+
+    // If a set of status code are provided and the current status code is not in the list
+    if (
+      statusCode != null &&
+      Array.isArray(statusCodes) &&
+      !statusCodes.includes(statusCode)
+    ) {
+      cb(err)
+      return
+    }
+
+    // If we reached the max number of retries
+    if (counter > maxRetries) {
+      cb(err)
+      return
+    }
+
+    let retryAfterHeader = headers != null && headers['retry-after']
+    if (retryAfterHeader) {
+      retryAfterHeader = Number(retryAfterHeader)
+      retryAfterHeader = isNaN(retryAfterHeader)
+        ? calculateRetryAfterHeader(retryAfterHeader)
+        : retryAfterHeader * 1e3 // Retry-After is in seconds
+    }
+
+    const retryTimeout =
+      retryAfterHeader > 0
+        ? Math.min(retryAfterHeader, maxTimeout)
+        : Math.min(currentTimeout * timeoutFactor ** counter, maxTimeout)
+
+    state.currentTimeout = retryTimeout
+
+    setTimeout(() => cb(null), retryTimeout)
+  }
+
+  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
+    const headers = parseHeaders(rawHeaders)
+
+    this.retryCount += 1
+
+    if (statusCode >= 300) {
+      this.abort(
+        new RequestRetryError('Request failed', statusCode, {
+          headers,
+          count: this.retryCount
+        })
+      )
+      return false
+    }
+
+    // Checkpoint for resume from where we left it
+    if (this.resume != null) {
+      this.resume = null
+
+      if (statusCode !== 206) {
+        return true
+      }
+
+      const contentRange = parseRangeHeader(headers['content-range'])
+      // If no content range
+      if (!contentRange) {
+        this.abort(
+          new RequestRetryError('Content-Range mismatch', statusCode, {
+            headers,
+            count: this.retryCount
+          })
+        )
+        return false
+      }
+
+      // Let's start with a weak etag check
+      if (this.etag != null && this.etag !== headers.etag) {
+        this.abort(
+          new RequestRetryError('ETag mismatch', statusCode, {
+            headers,
+            count: this.retryCount
+          })
+        )
+        return false
+      }
+
+      const { start, size, end = size } = contentRange
+
+      assert(this.start === start, 'content-range mismatch')
+      assert(this.end == null || this.end === end, 'content-range mismatch')
+
+      this.resume = resume
+      return true
+    }
+
+    if (this.end == null) {
+      if (statusCode === 206) {
+        // First time we receive 206
+        const range = parseRangeHeader(headers['content-range'])
+
+        if (range == null) {
+          return this.handler.onHeaders(
+            statusCode,
+            rawHeaders,
+            resume,
+            statusMessage
+          )
+        }
+
+        const { start, size, end = size } = range
+
+        assert(
+          start != null && Number.isFinite(start) && this.start !== start,
+          'content-range mismatch'
+        )
+        assert(Number.isFinite(start))
+        assert(
+          end != null && Number.isFinite(end) && this.end !== end,
+          'invalid content-length'
+        )
+
+        this.start = start
+        this.end = end
+      }
+
+      // We make our best to checkpoint the body for further range headers
+      if (this.end == null) {
+        const contentLength = headers['content-length']
+        this.end = contentLength != null ? Number(contentLength) : null
+      }
+
+      assert(Number.isFinite(this.start))
+      assert(
+        this.end == null || Number.isFinite(this.end),
+        'invalid content-length'
+      )
+
+      this.resume = resume
+      this.etag = headers.etag != null ? headers.etag : null
+
+      return this.handler.onHeaders(
+        statusCode,
+        rawHeaders,
+        resume,
+        statusMessage
+      )
+    }
+
+    const err = new RequestRetryError('Request failed', statusCode, {
+      headers,
+      count: this.retryCount
+    })
+
+    this.abort(err)
+
+    return false
+  }
+
+  onData (chunk) {
+    this.start += chunk.length
+
+    return this.handler.onData(chunk)
+  }
+
+  onComplete (rawTrailers) {
+    this.retryCount = 0
+    return this.handler.onComplete(rawTrailers)
+  }
+
+  onError (err) {
+    if (this.aborted || isDisturbed(this.opts.body)) {
+      return this.handler.onError(err)
+    }
+
+    this.retryOpts.retry(
+      err,
+      {
+        state: { counter: this.retryCount++, currentTimeout: this.retryAfter },
+        opts: { retryOptions: this.retryOpts, ...this.opts }
+      },
+      onRetry.bind(this)
+    )
+
+    function onRetry (err) {
+      if (err != null || this.aborted || isDisturbed(this.opts.body)) {
+        return this.handler.onError(err)
+      }
+
+      if (this.start !== 0) {
+        this.opts = {
+          ...this.opts,
+          headers: {
+            ...this.opts.headers,
+            range: `bytes=${this.start}-${this.end ?? ''}`
+          }
+        }
+      }
+
+      try {
+        this.dispatch(this.opts, this)
+      } catch (err) {
+        this.handler.onError(err)
+      }
+    }
+  }
+}
+
+module.exports = RetryHandler
 
 
 /***/ }),
@@ -87668,6 +85603,20 @@ class Pool extends PoolBase {
       ? { ...options.interceptors }
       : undefined
     this[kFactory] = factory
+
+    this.on('connectionError', (origin, targets, error) => {
+      // If a connection error occurs, we remove the client from the pool,
+      // and emit a connectionError event. They will not be re-used.
+      // Fixes https://github.com/nodejs/undici/issues/3895
+      for (const target of targets) {
+        // Do not use kRemoveClient here, as it will close the client,
+        // but the client cannot be closed in this state.
+        const idx = this[kClients].indexOf(target)
+        if (idx !== -1) {
+          this[kClients].splice(idx, 1)
+        }
+      }
+    })
   }
 
   [kGetDispatcher] () {
@@ -87762,6 +85711,9 @@ class ProxyAgent extends DispatcherBase {
     this[kProxyTls] = opts.proxyTls
     this[kProxyHeaders] = opts.headers || {}
 
+    const resolvedUrl = new URL(opts.uri)
+    const { origin, port, host, username, password } = resolvedUrl
+
     if (opts.auth && opts.token) {
       throw new InvalidArgumentError('opts.auth cannot be used in combination with opts.token')
     } else if (opts.auth) {
@@ -87769,10 +85721,9 @@ class ProxyAgent extends DispatcherBase {
       this[kProxyHeaders]['proxy-authorization'] = `Basic ${opts.auth}`
     } else if (opts.token) {
       this[kProxyHeaders]['proxy-authorization'] = opts.token
+    } else if (username && password) {
+      this[kProxyHeaders]['proxy-authorization'] = `Basic ${Buffer.from(`${decodeURIComponent(username)}:${decodeURIComponent(password)}`).toString('base64')}`
     }
-
-    const resolvedUrl = new URL(opts.uri)
-    const { origin, port, host } = resolvedUrl
 
     const connect = buildConnector({ ...opts.proxyTls })
     this[kConnectEndpoint] = buildConnector({ ...opts.requestTls })
@@ -87797,7 +85748,7 @@ class ProxyAgent extends DispatcherBase {
           })
           if (statusCode !== 200) {
             socket.on('error', () => {}).destroy()
-            callback(new RequestAbortedError('Proxy response !== 200 when HTTP Tunneling'))
+            callback(new RequestAbortedError(`Proxy response (${statusCode}) !== 200 when HTTP Tunneling`))
           }
           if (opts.protocol !== 'https:') {
             callback(null, socket)
@@ -97993,6 +95944,14 @@ module.exports = require("net");
 
 /***/ }),
 
+/***/ 7598:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:crypto");
+
+/***/ }),
+
 /***/ 8474:
 /***/ ((module) => {
 
@@ -99760,7 +97719,7 @@ module.exports = parseParams
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.0","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1","twirp-ts":"^2.5.0"},"devDependencies":{"@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.3","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1"},"devDependencies":{"@types/node":"^22.13.9","@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
 
 /***/ }),
 
