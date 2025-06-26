@@ -56,3 +56,19 @@ jobs:
       - name: Test Local Action
         id: test-action
         uses: ./
+
+  test-action-windows:
+    name: GitHub Actions Test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - run: cp __tests__/data/pyproject.test1.toml pyproject.toml
+
+      - name: Test Local Action
+        id: test-action
+        uses: ./
+
