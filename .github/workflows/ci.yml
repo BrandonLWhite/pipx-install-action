@@ -66,6 +66,10 @@ jobs:
         id: checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3' # Use the exact same version as currently in effect for ubuntu-latest
+
       - run: cp __tests__/data/pyproject.test1.toml pyproject.toml
 
       - name: Test Local Action
