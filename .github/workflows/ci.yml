@@ -43,7 +43,7 @@ jobs:
         run: npm run ci-test
 
   test-action:
-    name: GitHub Actions Test
+    name: GitHub Actions Test (ubuntu-latest)
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +58,7 @@ jobs:
         uses: ./
 
   test-action-windows:
-    name: GitHub Actions Test
+    name: GitHub Actions Test (windows-latest)
     runs-on: windows-latest
 
     steps:
