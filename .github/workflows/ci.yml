@@ -43,7 +43,7 @@ jobs:
         run: npm run ci-test
 
   test-action:
-    name: GitHub Actions Test
+    name: GitHub Actions Test (ubuntu-latest)
     runs-on: ubuntu-latest
 
     steps:
@@ -56,3 +56,23 @@ jobs:
       - name: Test Local Action
         id: test-action
         uses: ./
+
+  test-action-windows:
+    name: GitHub Actions Test (windows-latest)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3' # Use the exact same version as currently in effect for ubuntu-latest
+
+      - run: cp __tests__/data/pyproject.test1.toml pyproject.toml
+
+      - name: Test Local Action
+        id: test-action
+        uses: ./
+

@@ -95686,9 +95686,12 @@ async function pipxInstall(options) {
   const pythonVersion = (
     await getExecOutput(pipxPythonPath, ['--version'])
   ).stdout.trim()
+
   const systemHashInput = {
     pipx: pipxVersion,
-    python: pythonVersion
+    python: pythonVersion,
+    imageVersion: process.env.ImageVersion,
+    imageOs: process.env.ImageOS
   }
 
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
