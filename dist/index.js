@@ -95645,12 +95645,6 @@ const crypto = __nccwpck_require__(6982)
 const TOML = __nccwpck_require__(4572)
 const semver = __nccwpck_require__(2088)
 
-/**
-Note: There is currently a bug in actions/toolkit/cache where it is mutating the array of paths that are passed into
-      restoreCache such that a subsequent call to saveCache utilizes a different array of keys.
-      See https://github.com/actions/toolkit/issues/1579
-      and https://github.com/actions/toolkit/blob/main/packages/cache/src/internal/cacheHttpClient.ts#L88C13-L88C13
-*/
 module.exports = {
   pipxInstall
 }
