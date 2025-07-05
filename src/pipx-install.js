@@ -51,17 +51,17 @@ async function pipxInstall(options) {
     await getExecOutput(pipxPythonPath, ['--version'])
   ).stdout.trim()
 
-// TODO BW: Need to include the following:
-//
-// Current runner version: '2.325.0'
-// Runner Image Provisioner
-// Hosted Compute Agent
-// Version: 20250620.352
-// Runner Image
-//  Image: windows-2022
-//  Version: 20250602.1.0
-//
-// check environment vars $ImageOS and $ImageVersion
+  // TODO BW: Need to include the following:
+  //
+  // Current runner version: '2.325.0'
+  // Runner Image Provisioner
+  // Hosted Compute Agent
+  // Version: 20250620.352
+  // Runner Image
+  //  Image: windows-2022
+  //  Version: 20250602.1.0
+  //
+  // check environment vars $ImageOS and $ImageVersion
   const imageOs = process.env['ImageOS'] || 'unknown'
   core.info(`imageOs: ${imageOs}`)
   const imageVersion = process.env['ImageVersion'] || 'unknown'
