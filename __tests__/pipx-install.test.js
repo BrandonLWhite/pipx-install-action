@@ -209,7 +209,7 @@ describe('pipx-install', () => {
   it('does not cache pipx shared/ if it already exists', async () => {
     const statMock = jest
       .spyOn(fs, 'stat')
-      .mockImplementation(async statPath => {
+      .mockImplementation(async (statPath) => {
         return {}
       })
 

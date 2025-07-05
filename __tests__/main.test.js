@@ -39,7 +39,7 @@ describe('action', () => {
     }
 
     // Mock the action's inputs
-    getInputMock.mockImplementation(name => {
+    getInputMock.mockImplementation((name) => {
       return inputs[name]
     })
   })
