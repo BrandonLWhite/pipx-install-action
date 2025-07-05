@@ -58,7 +58,7 @@ async function pipxInstall(options) {
     imageOs: process.env.ImageOS
   }
 
-  core.info('systemHashInput', JSON.stringify(systemHashInput))
+  core.info(`systemHashInput: ${JSON.stringify(systemHashInput)}`)
 
   const pipxSharedCacheKey = `pipx-install-shared-${hashObject(
     systemHashInput

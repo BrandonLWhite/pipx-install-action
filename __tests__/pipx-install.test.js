@@ -26,6 +26,7 @@ function getPyprojectFile(name) {
 
 describe('pipx-install', () => {
   const { pipxInstall } = require('../src/pipx-install')
+  const originalEnv = process.env
   let pipxVersion
   let cache = {}
   function addCache(key, callback = null) {
@@ -51,6 +52,7 @@ describe('pipx-install', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    process.env = { ...originalEnv } // Deep copy the original environment so we can alter it and then put the original back when we are done
     pipxVersion = '1.1.1'
     cache = {}
     venvs = {}
@@ -91,6 +93,10 @@ describe('pipx-install', () => {
       }
       return null
     })
+  })
+
+  afterEach(() => {
+    process.env = originalEnv // Restore the original environment
   })
 
   it('installs using pipx (caching)', async () => {
