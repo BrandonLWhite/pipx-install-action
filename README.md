@@ -70,7 +70,7 @@ required version is `1.1.0` for use with `pipx-install`.  Fortunately, `pipx` is
 GitHub hosted runners!
 
 > [!NOTE]
-> `pipx-install` is only tested on Ubuntu Linux based runners at this time.  "It should work" on Windows and MacOS
+> `pipx-install` is only tested on Ubuntu Linux and Windows based runners at this time.  "It should work" on MacOS
 runners, but if you encounter an issue please file a bug report with all the details!
 
 ## Python command-line (CLI) tools that are good candidates for installing with pipx-install

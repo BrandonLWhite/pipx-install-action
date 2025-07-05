@@ -100,6 +100,9 @@ describe('pipx-install', () => {
   })
 
   it('installs using pipx (caching)', async () => {
+    process.env.ImageVersion = '20250622.1.0'
+    process.env.ImageOS = 'ubuntu24'
+
     await pipxInstall({
       installConfigFile: getPyprojectFile('pyproject.test1.toml'),
       cachePackages: true
@@ -125,19 +128,19 @@ describe('pipx-install', () => {
 
     expect(saveCacheMock).toHaveBeenCalledWith(
       ['PIPX_LOCAL_VENVS-FAKE-VALUE/poetry'],
-      'pipx-install-poetry-0ca5cde0d86eeb47604df03044d5d7b635821e3e70aa17922be6fde83557e29d'
+      'pipx-install-poetry-fe16d3d2c69628638a1e4cede2e1ed8b44619ad00b3dad98493652e204383c8b'
     )
     expect(saveCacheMock).toHaveBeenCalledWith(
       ['PIPX_LOCAL_VENVS-FAKE-VALUE/tox'],
-      'pipx-install-tox-dcee4b76e7fe46db940e29394837dff662270bcdcd7637a0afde1d55e7a93ec3'
+      'pipx-install-tox-c53f41cc5ca935c7b3e1d3312d4bd41f9130f9e6c361b33802f40261c3d64e97'
     )
     expect(saveCacheMock).toHaveBeenCalledWith(
       ['PIPX_LOCAL_VENVS-FAKE-VALUE/poethepoet'],
-      'pipx-install-poethepoet-25955029249a67aa19a06a3bb90d0419578fbbe1722abf56f3fc72c639731356'
+      'pipx-install-poethepoet-427ca9496a47ed76de68a487e77542aa2cd93fe734a44fd9cd728bc5e56b1737'
     )
     expect(saveCacheMock).toHaveBeenCalledWith(
       ['PIPX_SHARED_LIBS-FAKE-VALUE'],
-      'pipx-install-shared-4d4420c2fd7259151719e8caa3fbeafdf42c1b0c6eaca8c0edf7cfd46196ba64'
+      'pipx-install-shared-bd4b048a3dc2a3c8de88799b9460bf8744c2a674ef52b677d2ecd776d05a50e7'
     )
   })
 
@@ -152,13 +155,16 @@ describe('pipx-install', () => {
   })
 
   it('installs using pipx (cache hit)', async () => {
+    process.env.ImageVersion = '20250623.1.0'
+    process.env.ImageOS = 'win22'
+
     const symlinkMock = jest.spyOn(fs, 'symlink').mockImplementation()
 
     addCache(
-      'pipx-install-shared-4d4420c2fd7259151719e8caa3fbeafdf42c1b0c6eaca8c0edf7cfd46196ba64'
+      'pipx-install-shared-6338ae2714f1c71b9856ebb3020c43758486b409733e08d60eeb09a9290fdbd0'
     )
     addCache(
-      'pipx-install-sometool-0babf7582b26404ef7d17c701f9f8707512ef2d9bae7b8f4b2596a40de8297b8',
+      'pipx-install-sometool-ed50bd8ac9ca2bb25d892d536e8b05c3c4c4244e8c1af35c31dc212d05e75870',
       () => {
         addVenv('sometool')
       }
