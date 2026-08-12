@@ -1,3 +1,9 @@
+>[!IMPORTANT]
+>**This repository (and action) has moved to https://github.com/python-build-tools/pipx-install-action**
+>
+>This original repo will remain in place so builds don't break, but it will not be updated.
+
+
 # [pipx-install GitHub Action](https://github.com/brandonlwhite/pipx-install-action)
 
 [![GitHub Super-Linter](https://github.com/brandonlwhite/pipx-install-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
